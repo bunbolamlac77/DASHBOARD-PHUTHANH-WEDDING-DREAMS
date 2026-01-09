@@ -1,87 +1,105 @@
-import React from 'react';
-import { Search, Filter, MoreHorizontal, CheckCircle, Clock } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { api } from '../services/api'; // Import cầu nối
+import { Search, Loader } from 'lucide-react';
 
 const CustomerList = () => {
-  // Dữ liệu giả lập (Mock Data)
-  const customers = [
-    { id: 'WS001', groom: 'Minh Tuấn', bride: 'Thanh Hằng', date: '2024-10-15', service: 'Full Package', status: 'completed', amount: '45.000.000' },
-    { id: 'WS002', groom: 'Quốc Bảo', bride: 'Minh Anh', date: '2024-11-02', service: 'Decor + Sound', status: 'pending', amount: '28.000.000' },
-    { id: 'WS003', groom: 'Đức Thịnh', bride: 'Hồng Ngọc', date: '2024-12-20', service: 'Photography', status: 'deposit', amount: '12.000.000' },
-  ];
+    const [shows, setShows] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [filter, setFilter] = useState('all'); // all, pending, done
+    const [searchTerm, setSearchTerm] = useState('');
 
-  const getStatusStyle = (status) => {
-      switch(status) {
-          case 'completed': return 'bg-success/20 text-success border-success/20';
-          case 'pending': return 'bg-warning/20 text-warning border-warning/20';
-          default: return 'bg-blue-500/20 text-blue-400 border-blue-500/20';
-      }
-  };
+    // Gọi API khi mới vào trang
+    useEffect(() => {
+        const fetchData = async () => {
+            setLoading(true);
+            const res = await api.getShows();
+            if (res.status === 'success') {
+                setShows(res.data);
+            }
+            setLoading(false);
+        };
+        fetchData();
+    }, []);
 
-  return (
-    <div className="space-y-6 animate-fade-in">
-      {/* Toolbar */}
-      <div className="flex flex-col md:flex-row gap-4 justify-between items-center bg-glass p-4 rounded-2xl border border-white/5">
-         <div className="relative w-full md:w-96">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-graytext" size={18} />
-            <input 
-                type="text" 
-                placeholder="Tìm kiếm tên Chú rể, Cô dâu..." 
-                className="w-full bg-deep border border-white/10 rounded-xl pl-10 pr-4 py-2 text-sm text-white focus:outline-none focus:border-gold/50 transition-colors"
-            />
-         </div>
-         <div className="flex gap-2">
-             <button className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 rounded-xl text-sm font-medium transition-colors">
-                 <Filter size={18}/> Bộ lọc
-             </button>
-             <button className="px-4 py-2 bg-gold hover:bg-[#B59223] text-deep rounded-xl text-sm font-bold shadow-glow transition-all">
-                 + Thêm Mới
-             </button>
-         </div>
-      </div>
+    // Logic lọc và tìm kiếm
+    const filteredShows = shows.filter(show => {
+        const matchSearch = (show.GroomName + show.BrideName + show.Phone)
+            .toLowerCase().includes(searchTerm.toLowerCase());
+        
+        if (filter === 'all') return matchSearch;
+        return matchSearch && show.Status.toLowerCase() === filter;
+    });
 
-      {/* Table */}
-      <div className="bg-glass rounded-3xl border border-white/5 overflow-hidden">
-          <table className="w-full text-left border-collapse">
-              <thead>
-                  <tr className="bg-white/5 text-graytext text-sm uppercase tracking-wider">
-                      <th className="p-4 font-medium">Mã Show</th>
-                      <th className="p-4 font-medium">Chú Rể & Cô Dâu</th>
-                      <th className="p-4 font-medium">Ngày Cưới</th>
-                      <th className="p-4 font-medium">Dịch Vụ</th>
-                      <th className="p-4 font-medium">Trạng Thái</th>
-                      <th className="p-4 font-medium text-right">Tổng Tiền</th>
-                      <th className="p-4 font-medium text-center">Xử lý</th>
-                  </tr>
-              </thead>
-              <tbody className="divide-y divide-white/5 text-sm">
-                  {customers.map((item) => (
-                      <tr key={item.id} className="hover:bg-white/5 transition-colors group">
-                          <td className="p-4 font-medium text-gold">{item.id}</td>
-                          <td className="p-4">
-                              <div className="font-bold text-cream">{item.groom} & {item.bride}</div>
-                          </td>
-                          <td className="p-4 text-graytext">{item.date}</td>
-                          <td className="p-4 text-cream">{item.service}</td>
-                          <td className="p-4">
-                              <span className={`px-3 py-1 rounded-full text-xs font-bold border ${getStatusStyle(item.status)}`}>
-                                  {item.status === 'completed' && 'Đã xong'}
-                                  {item.status === 'pending' && 'Chờ xử lý'}
-                                  {item.status === 'deposit' && 'Đã cọc'}
-                              </span>
-                          </td>
-                          <td className="p-4 text-right font-bold text-gold">{item.amount}₫</td>
-                          <td className="p-4 text-center">
-                              <button className="p-2 hover:bg-white/10 rounded-lg text-graytext hover:text-white transition-colors">
-                                  <MoreHorizontal size={18} />
-                              </button>
-                          </td>
-                      </tr>
-                  ))}
-              </tbody>
-          </table>
-      </div>
-    </div>
-  );
+    return (
+        <div className="space-y-6 animate-fade-in max-w-7xl mx-auto h-full flex flex-col">
+            {/* Thanh công cụ tìm kiếm & lọc */}
+            <div className="sticky top-0 bg-deep/95 backdrop-blur-xl z-20 py-2 space-y-3">
+                <div className="relative">
+                     <input 
+                        type="text" 
+                        placeholder="Tìm tên Dâu Rể, SĐT..." 
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full bg-glass border border-white/10 px-10 py-3 rounded-2xl text-sm focus:border-gold text-cream outline-none"
+                     />
+                     <Search className="absolute left-4 top-3.5 text-gray-500" size={18} />
+                </div>
+                <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
+                    {['all', 'pending', 'done'].map(st => (
+                        <button 
+                            key={st}
+                            onClick={() => setFilter(st)}
+                            className={`px-5 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-all ${
+                                filter === st ? 'bg-gold text-deep shadow-glow' : 'bg-glass border border-white/10 text-graytext'
+                            }`}
+                        >
+                            {st === 'all' ? 'Tất cả' : st.charAt(0).toUpperCase() + st.slice(1)}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            {/* Danh sách hiển thị */}
+            <div className="space-y-3 pb-20">
+                {loading ? (
+                    <div className="flex flex-col items-center justify-center py-20 text-gold gap-2">
+                        <Loader className="animate-spin" size={30} />
+                        <p className="text-xs">Đang tải dữ liệu từ Google Sheet...</p>
+                    </div>
+                ) : filteredShows.length === 0 ? (
+                    <p className="text-center text-graytext py-10">Không tìm thấy dữ liệu.</p>
+                ) : (
+                    filteredShows.map((show, index) => (
+                        <div key={index} className="glass-panel p-5 rounded-[24px] flex items-center justify-between group cursor-pointer active:scale-[0.99] transition-all">
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-gray-800 to-black border border-white/10 flex items-center justify-center text-lg font-serif text-gold">
+                                    {index + 1}
+                                </div>
+                                <div>
+                                    <h4 className="font-serif text-lg text-cream">{show.GroomName} & {show.BrideName}</h4>
+                                    <p className="text-xs text-graytext">
+                                        {new Date(show.Date).toLocaleDateString('vi-VN')} • {show.ServiceList}
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="flex flex-col items-end gap-1">
+                                <span className="text-gold font-bold text-sm">
+                                    {Number(show.TotalAmount).toLocaleString()}đ
+                                </span>
+                                <span className={`text-[10px] px-2 py-0.5 rounded border ${
+                                    show.Status === 'Done' 
+                                    ? 'bg-success/10 text-success border-success/20' 
+                                    : 'bg-warning/10 text-warning border-warning/20'
+                                }`}>
+                                    {show.Status}
+                                </span>
+                            </div>
+                        </div>
+                    ))
+                )}
+            </div>
+        </div>
+    );
 };
 
 export default CustomerList;
