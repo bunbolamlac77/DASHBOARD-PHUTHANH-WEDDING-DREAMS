@@ -15,9 +15,7 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
     <aside className="hidden md:flex flex-col w-64 h-full p-6 z-50 bg-deep border-r border-white/5">
         {/* Logo */}
         <div className="flex items-center gap-3 mb-12">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-gold to-[#B59223] flex items-center justify-center text-deep font-bold text-xl font-serif">
-                P
-            </div>
+            <img src="/logo.png" alt="Phu Thanh Wedding" className="w-12 h-12 object-contain" />
             <div>
                 <h1 className="font-serif text-lg text-gold leading-none">Phu Thanh</h1>
                 <p className="text-[10px] text-graytext uppercase tracking-widest mt-1">Wedding Dreams</p>
