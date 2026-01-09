@@ -1,0 +1,17 @@
+@import "tailwindcss";
+@config "../tailwind.config.js";
+
+@layer base {
+  body {
+    @apply bg-deep text-cream font-sans antialiased overflow-hidden;
+  }
+}
+
+/* Scrollbar ẩn (cho đẹp trên Mac/Mobile) */
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+.no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
