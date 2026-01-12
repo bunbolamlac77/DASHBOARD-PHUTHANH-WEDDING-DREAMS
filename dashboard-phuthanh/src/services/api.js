@@ -37,5 +37,22 @@ export const api = {
     getServices: () => sendRequest('getServices'),
     
     // Tạo Show mới
+// Tạo Show mới
     addShow: (data) => sendRequest('addShow', 'POST', data)
+};
+
+export const createNewShow = async (data) => {
+    try {
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            mode: 'no-cors', // Quan trọng: Google Apps Script yêu cầu no-cors
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'addShow', payload: data })
+        });
+        // Vì no-cors không trả về data, ta giả định thành công nếu không lỗi network
+        return true; 
+    } catch (error) {
+        console.error("API Error:", error);
+        throw error;
+    }
 };

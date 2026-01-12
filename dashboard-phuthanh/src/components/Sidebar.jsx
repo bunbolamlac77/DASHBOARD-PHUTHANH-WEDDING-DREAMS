@@ -1,7 +1,6 @@
-import React from 'react';
-import { LayoutDashboard, Users, FilePlus, Calendar, Settings, LogOut } from 'lucide-react';
+import { LayoutDashboard, Users, FilePlus, Calendar, Settings, LogOut, X } from 'lucide-react';
 
-const Sidebar = ({ activeTab, setActiveTab }) => {
+const Sidebar = ({ activeTab, setActiveTab, isOpen, onClose }) => {
   
   // Hàm tạo Class động cho nút bấm (để hiện màu vàng khi đang chọn)
   const getNavItemClass = (tabName) => {
@@ -11,8 +10,27 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
       : `${baseClass} text-graytext hover:bg-white/5 hover:text-white`; // Inactive
   };
 
+  const handleNavClick = (tab) => {
+    setActiveTab(tab);
+    if (onClose) onClose(); // Close sidebar on mobile when item clicked
+  };
+
   return (
-    <aside className="hidden md:flex flex-col w-64 h-full p-6 z-50 bg-deep border-r border-white/5">
+    <>
+    <aside className={`
+        fixed md:static inset-y-0 left-0 z-50 
+        w-64 h-full p-6 bg-deep border-r border-white/5 
+        transform transition-transform duration-300 ease-in-out
+        ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+    `}>
+        {/* Close Button Mobile */}
+        <button 
+            onClick={onClose}
+            className="absolute top-4 right-4 md:hidden text-graytext hover:text-white"
+        >
+            <X size={24} />
+        </button>
+
         {/* Logo */}
         <div className="flex items-center gap-3 mb-12">
             <img src="/logo.png" alt="Phu Thanh Wedding" className="w-12 h-12 object-contain" />
@@ -24,19 +42,19 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
 
         {/* Navigation */}
         <nav className="flex-1 space-y-2">
-            <button onClick={() => setActiveTab('dashboard')} className={getNavItemClass('dashboard')}>
+            <button onClick={() => handleNavClick('dashboard')} className={getNavItemClass('dashboard')}>
                 <LayoutDashboard size={20} />
                 <span className="font-medium">Dashboard</span>
             </button>
-            <button onClick={() => setActiveTab('customers')} className={getNavItemClass('customers')}>
+            <button onClick={() => handleNavClick('customers')} className={getNavItemClass('customers')}>
                 <Users size={20} />
-                <span className="font-medium">Danh sách Khách</span>
+                <span className="font-medium">Danh sách Show</span>
             </button>
-            <button onClick={() => setActiveTab('quote')} className={getNavItemClass('quote')}>
+            <button onClick={() => handleNavClick('quote')} className={getNavItemClass('quote')}>
                 <FilePlus size={20} />
                 <span className="font-medium">Tạo Báo Giá</span>
             </button>
-             <button onClick={() => setActiveTab('calendar')} className={getNavItemClass('calendar')}>
+             <button onClick={() => handleNavClick('calendar')} className={getNavItemClass('calendar')}>
                 <Calendar size={20} />
                 <span className="font-medium">Lịch Trình</span>
             </button>
@@ -44,7 +62,7 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
 
         {/* Bottom Actions */}
         <div className="border-t border-white/5 pt-6 space-y-4">
-             <button onClick={() => setActiveTab('settings')} className="w-full flex items-center gap-4 px-4 py-2 rounded-xl text-graytext hover:text-white transition-colors">
+             <button onClick={() => handleNavClick('settings')} className="w-full flex items-center gap-4 px-4 py-2 rounded-xl text-graytext hover:text-white transition-colors">
                 <Settings size={20} />
                 <span className="font-medium">Cài đặt</span>
             </button>
@@ -60,6 +78,7 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
             </div>
         </div>
     </aside>
+    </>
   );
 };
 

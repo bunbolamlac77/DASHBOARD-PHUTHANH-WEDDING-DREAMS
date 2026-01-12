@@ -35,3 +35,21 @@
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: rgba(212, 175, 55, 0.8); /* Gold đậm khi hover */
 }
+
+@layer components {
+  .glass-panel {
+    @apply bg-glass/80 backdrop-blur-xl border border-white/5 shadow-2xl transition-all duration-300;
+  }
+  
+  .glass-panel:hover {
+    @apply bg-glassHover border-gold/20 shadow-glow;
+  }
+
+  .input-field {
+    @apply w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-sm text-cream outline-none transition-all duration-300 placeholder:text-gray-500;
+  }
+
+  .input-field:focus {
+    @apply border-gold bg-black/40 shadow-glow;
+  }
+}
