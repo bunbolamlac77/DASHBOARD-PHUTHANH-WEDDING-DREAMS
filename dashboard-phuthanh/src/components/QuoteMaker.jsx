@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { toPng } from 'html-to-image';
 import { Plus, Trash2, Camera, Download, CheckCircle, Save, MapPin, Calendar, Phone, User, Loader2, Copy } from 'lucide-react';
-import { createNewShow } from '../services/api';
+import { createNewShow, getServices } from '../services/api';
+import Toast from './Toast';
 import QRCode from 'qrcode';
 
 // --- CẤU HÌNH DỮ LIỆU GÓI CHỤP ---
@@ -104,10 +105,48 @@ const QuoteMaker = () => {
   const [paymentQrImage, setPaymentQrImage] = useState(null); // Lưu ảnh QR thanh toán
   const [isSaving, setIsSaving] = useState(false); // Trạng thái đang lưu
   const [qrDataUrl, setQrDataUrl] = useState(''); // QR code as data URL
+  const [showAddedToast, setShowAddedToast] = useState(false); // Show toast when package added
+  
+  // ✅ NEW: Dynamic services from API
+  const [packages, setPackages] = useState({ wedding: [], video: [] });
+  const [loadingServices, setLoadingServices] = useState(true);
+  const [toast, setToast] = useState({ show: false, message: '', type: 'info' });
 
   const receiptRef = useRef(null); // Ref để chụp ảnh vùng báo giá
   const paymentQrRef = useRef(null); // Ref để chụp ảnh QR thanh toán
   const previewContainerRef = useRef(null); // Ref cho container preview
+
+  // ✅ NEW: Load services from API on mount
+  useEffect(() => {
+    const loadServices = async () => {
+      try {
+        setLoadingServices(true);
+        const services = await getServices();
+        
+        // Group by category
+        const grouped = {
+          wedding: services.filter(s => s.category === 'wedding'),
+          video: services.filter(s => s.category === 'video')
+        };
+        
+        setPackages(grouped);
+        console.log('Loaded services from API:', grouped);
+      } catch (error) {
+        console.error('Failed to load services:', error);
+        // Fallback to hardcoded packages
+        setPackages(PACKAGES);
+        setToast({ 
+          show: true, 
+          message: 'Không load được gói chụp từ server, dùng dữ liệu mặc định', 
+          type: 'warning' 
+        });
+      } finally {
+        setLoadingServices(false);
+      }
+    };
+    
+    loadServices();
+  }, []);
 
   // --- LOGIC TÍNH TOÁN ---
   const calculateTotal = () => {
@@ -125,6 +164,10 @@ const QuoteMaker = () => {
     // Cho phép thêm nhiều gói giống nhau (Mỗi lần thêm tạo ra một unique ID tạm thời)
     const newPackage = { ...pkg, _instanceId: Date.now() + Math.random() };
     setSelectedItems([...selectedItems, newPackage]);
+    
+    // Show toast notification
+    setShowAddedToast(true);
+    setTimeout(() => setShowAddedToast(false), 2000);
   };
 
   const handleRemovePackage = (instanceId) => {
@@ -224,36 +267,50 @@ const QuoteMaker = () => {
   
   // --- LƯU & XÁC NHẬN CỌC ---
   const handleSaveToSheet = async () => {
-    if(!customerInfo.groom && !customerInfo.bride) return alert("Vui lòng nhập tên Dâu/Rể");
+    if(!customerInfo.groom && !customerInfo.bride) {
+      setToast({ show: true, message: 'Vui lòng nhập tên Dâu/Rể', type: 'error' });
+      return;
+    }
     
     setIsSaving(true);
     const payload = {
-      groomName: customerInfo.groom,
-      brideName: customerInfo.bride,
-      phone: customerInfo.phone,
-      date: customerInfo.dates,
-      location: `${customerInfo.location1} - ${customerInfo.location2}`,
-      serviceList: selectedItems.map(i => i.name).join(', ') + (extraCosts.length ? ' + Phát sinh' : ''),
-      totalAmount: totalAmount,
-      deposit: depositAmount,
-      status: 'Confirmed', // Đánh dấu là đã xác nhận thông tin
-      notes: 'Khách đã xác nhận thông tin qua App'
+      GroomName: customerInfo.groom,
+      BrideName: customerInfo.bride,
+      Phone: customerInfo.phone,
+      Date: customerInfo.dates,
+      Location: `${customerInfo.location1} - ${customerInfo.location2}`,
+      ServiceList: selectedItems.map(i => i.name).join(', ') + (extraCosts.length ? ' + Phát sinh' : ''),
+      TotalAmount: totalAmount,
+      Deposit: depositAmount,
+      Status: 'Confirmed',
+      Notes: 'Khách đã xác nhận thông tin qua App'
     };
 
     try {
       console.log("Sending to Sheet:", payload);
       await createNewShow(payload); 
       
-      alert(`Đã lưu hồ sơ của ${customerInfo.groom} & ${customerInfo.bride} thành công!`);
-      // Reset form
-      setGeneratedImage(null);
-      setPaymentQrImage(null);
-      setSelectedItems([]);
-      setExtraCosts([]);
-      setCustomerInfo({ groom: '', bride: '', phone: '', dates: '', location1: '', location2: '' });
+      setToast({ 
+        show: true, 
+        message: `Đã lưu hồ sơ của ${customerInfo.groom} & ${customerInfo.bride} thành công!`,
+        type: 'success'
+      });
+      
+      // Reset form sau 2 giây
+      setTimeout(() => {
+        setGeneratedImage(null);
+        setPaymentQrImage(null);
+        setSelectedItems([]);
+        setExtraCosts([]);
+        setCustomerInfo({ groom: '', bride: '', phone: '', dates: '', location1: '', location2: '' });
+      }, 2000);
     } catch (error) {
       console.error(error);
-      alert('Lỗi khi lưu dữ liệu!');
+      setToast({ 
+        show: true, 
+        message: error.message || 'Lỗi khi lưu dữ liệu!',
+        type: 'error'
+      });
     } finally {
       setIsSaving(false);
     }
@@ -348,24 +405,59 @@ const QuoteMaker = () => {
             <Camera size={18} /> Chọn Gói Chụp (Sáng)
           </h3>
           
-          {/* Tabs giả lập */}
+          {/* Loading state */}
+          {loadingServices ? (
+            <div className="text-center py-4 text-graytext">
+              <Loader2 className="animate-spin mx-auto mb-2" size={24} />
+              <p className="text-sm">Đang tải gói chụp...</p>
+            </div>
+          ) : (
           <div className="space-y-4">
-
-            
             <div>
               <p className="text-xs text-graytext mb-2 uppercase font-bold">Gói Cưới & Video</p>
               <div className="grid grid-cols-1 gap-2">
-                {[...PACKAGES.wedding, ...PACKAGES.video].map(pkg => (
+                {[...packages.wedding, ...packages.video].map(pkg => (
                   <button key={pkg.id} onClick={() => handleAddPackage(pkg)} 
                     className="flex justify-between p-3 rounded-xl bg-white/5 hover:bg-gold/10 hover:border-gold border border-transparent transition-all text-sm text-left group">
                     <span className="group-hover:text-gold">{pkg.name}</span>
                     <span className="font-bold text-cream">{pkg.price.toLocaleString()}đ</span>
                   </button>
                 ))}
+                {packages.wedding.length === 0 && packages.video.length === 0 && (
+                  <p className="text-xs text-gray-500 italic text-center py-4">Không có gói chụp nào</p>
+                )}
               </div>
             </div>
           </div>
+          )}
         </div>
+
+        {/* 2.5 Gói đã chọn */}
+        {selectedItems.length > 0 && (
+          <div className="glass-panel p-5 rounded-3xl space-y-3">
+            <div className="flex justify-between items-center">
+              <h3 className="text-gold font-serif text-lg flex items-center gap-2">
+                <CheckCircle size={18} /> Gói đã chọn ({selectedItems.length})
+              </h3>
+            </div>
+            <div className="space-y-2">
+              {selectedItems.map((item) => (
+                <div key={item._instanceId} className="flex justify-between items-center p-3 rounded-xl bg-white/5 border border-white/10">
+                  <span className="text-sm text-cream">{item.name}</span>
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm font-bold text-gold">{item.price.toLocaleString()}đ</span>
+                    <button 
+                      onClick={() => handleRemovePackage(item._instanceId)}
+                      className="text-red-500 hover:text-red-400 p-1 hover:bg-red-500/10 rounded transition-colors"
+                      title="Xóa gói">
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* 3. Phát sinh */}
         <div className="glass-panel p-5 rounded-3xl space-y-3">
@@ -520,7 +612,7 @@ const QuoteMaker = () => {
                                         <div key={item._instanceId || i} className="flex justify-between text-sm group">
                                             <span className="text-gray-300 flex items-center gap-2">
                                                 <button onClick={() => handleRemovePackage(item._instanceId)} 
-                                                    className="opacity-0 group-hover:opacity-100 text-red-500 hover:text-red-400 -ml-3 transition-opacity" title="Xóa">
+                                                    className="opacity-100 md:opacity-0 md:group-hover:opacity-100 text-red-500 hover:text-red-400 -ml-3 transition-opacity" title="Xóa">
                                                     <Trash2 size={10} />
                                                 </button>
                                                 {item.name}
@@ -631,6 +723,25 @@ const QuoteMaker = () => {
         </div>
 
       </div>
+
+      {/* Toast Notification */}
+      {showAddedToast && (
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 animate-fade-in">
+          <div className="bg-success/90 backdrop-blur-xl text-white px-6 py-3 rounded-2xl shadow-2xl border border-success/20 flex items-center gap-2">
+            <CheckCircle size={20} className="text-white" />
+            <span className="font-medium">Đã thêm gói chụp!</span>
+          </div>
+        </div>
+      )}
+      
+      {/* Error/Success Toast */}
+      {toast.show && (
+        <Toast 
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast({ ...toast, show: false })}
+        />
+      )}
     </div>
   );
 };
