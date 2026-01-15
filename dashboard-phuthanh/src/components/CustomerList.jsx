@@ -1,6 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Filter, Phone, Calendar, CheckCircle, Clock } from 'lucide-react';
 import { getShows } from '../services/api'; // ✅ Import hàm chuẩn từ api.js
+import ShowDetailModal from './ShowDetailModal'; // ✅ Import Modal mới
+
+// Tên hiển thị các Tabs lọc (Map English Keys -> Vietnamese Labels)
+const FILTER_TABS = [
+    { key: 'All', label: 'Tất cả' },
+    { key: 'Pending', label: 'Chờ xử lý' },
+    { key: 'Deposited', label: 'Đã cọc' },
+    { key: 'Shooting', label: 'Chụp ảnh' },
+    { key: 'Editing', label: 'Hậu kỳ' },
+    { key: 'Delivery', label: 'Giao sản phẩm' },
+    { key: 'Done', label: 'Hoàn thành' }
+];
+
+// Map trạng thái để hiển thị trên List
+const STATUS_LABELS = {
+    'Pending': 'Chờ xử lý',
+    'Deposited': 'Đã cọc',
+    'Shooting': 'Chụp ảnh',
+    'Editing': 'Hậu kỳ',
+    'Delivery': 'Giao sản phẩm',
+    'Done': 'Hoàn thành'
+};
 
 const CustomerList = () => {
     const [customers, setCustomers] = useState([]);
@@ -8,6 +30,9 @@ const CustomerList = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [filterStatus, setFilterStatus] = useState('All');
     const [error, setError] = useState(null); // State lưu lỗi
+    
+    // ✅ State quản lý Modal
+    const [selectedShow, setSelectedShow] = useState(null);
 
     // Helper: Normalize keys to lowercase to avoid case sensitivity issues
     const normalizeData = (data) => {
@@ -18,53 +43,63 @@ const CustomerList = () => {
             });
             // Return object with standardized keys (CamelCase mapping)
             return {
+               ID: newItem.id || '', // ✅ Quan trọng: Map ID
                GroomName: newItem.groomname || newItem.groom || '',
                BrideName: newItem.bridename || newItem.bride || '',
                Phone: newItem.phone || '',
                Date: newItem.date || '',
-               TotalAmount: newItem.totalamount || 0,
-               Status: newItem.status || 'Pending',
+               Location: newItem.location || '',
+               Notes: newItem.notes || '',
                ServiceList: newItem.servicelist || '',
+               
+               // Số tiền
+               TotalAmount: newItem.totalamount || 0,
+               Deposit: newItem.deposit || 0,
+               PaidAmount: newItem.paidamount || 0, // ✅ Map PaidAmount
+               
+               Status: newItem.status || 'Pending',
                ...newItem // Keep originals just in case
             };
         });
     };
 
+    // ✅ Hàm load dữ liệu (dùng chung cho lần đầu và refresh)
+    const fetchData = async () => {
+        setLoading(true);
+        setError(null); // Reset error trước khi gọi lại
+        try {
+            const rawData = await getShows();
+            if (Array.isArray(rawData)) {
+                // 1. Chuẩn hóa dữ liệu (xử lý lệch hoa/thường)
+                const validData = normalizeData(rawData);
+                
+                // 2. Lọc bỏ các dòng rác (không có tên)
+                const cleanData = validData.filter(item => 
+                    item.GroomName.trim() !== '' || item.BrideName.trim() !== ''
+                );
+
+                // 3. Sắp xếp mới nhất
+                const sortedData = cleanData.sort((a, b) => {
+                    // Handle date parsing safely
+                    const dateA = new Date(a.Date).getTime() || 0;
+                    const dateB = new Date(b.Date).getTime() || 0;
+                    return dateB - dateA; 
+                });
+                
+                setCustomers(sortedData);
+            } else {
+                setCustomers([]);
+            }
+        } catch (err) {
+            console.error("Error loading data:", err);
+            setError(err.message); // Hiển thị lỗi ra UI
+        } finally {
+            setLoading(false);
+        }
+    };
+
     // ✅ Dùng useEffect để gọi API thật khi mở trang
     useEffect(() => {
-        const fetchData = async () => {
-            setLoading(true);
-            setError(null); // Reset error trước khi gọi lại
-            try {
-                const rawData = await getShows();
-                if (Array.isArray(rawData)) {
-                    // 1. Chuẩn hóa dữ liệu (xử lý lệch hoa/thường)
-                    const validData = normalizeData(rawData);
-                    
-                    // 2. Lọc bỏ các dòng rác (không có tên)
-                    const cleanData = validData.filter(item => 
-                        item.GroomName.trim() !== '' || item.BrideName.trim() !== ''
-                    );
-
-                    // 3. Sắp xếp mới nhất
-                    const sortedData = cleanData.sort((a, b) => {
-                        // Handle date parsing safely
-                        const dateA = new Date(a.Date).getTime() || 0;
-                        const dateB = new Date(b.Date).getTime() || 0;
-                        return dateB - dateA; 
-                    });
-                    
-                    setCustomers(sortedData);
-                } else {
-                    setCustomers([]);
-                }
-            } catch (err) {
-                console.error("Error loading data:", err);
-                setError(err.message); // Hiển thị lỗi ra UI
-            } finally {
-                setLoading(false);
-            }
-        };
         fetchData();
     }, []);
 
@@ -115,17 +150,17 @@ const CustomerList = () => {
                      <Search className="absolute left-3.5 top-3.5 w-4 h-4 text-gray-500" />
                 </div>
                 <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
-                    {['All', 'Deposited', 'Pending', 'Done'].map(status => (
+                    {FILTER_TABS.map(tab => (
                         <button 
-                            key={status}
-                            onClick={() => setFilterStatus(status)}
+                            key={tab.key}
+                            onClick={() => setFilterStatus(tab.key)}
                             className={`px-5 py-2 rounded-full text-sm whitespace-nowrap transition-all ${
-                                filterStatus === status 
+                                filterStatus === tab.key 
                                 ? 'bg-gold text-deep font-bold shadow-glow' 
                                 : 'bg-glass border border-white/10 text-graytext hover:bg-white/5'
                             }`}
                         >
-                            {status === 'All' ? 'Tất cả' : status}
+                            {tab.label}
                         </button>
                     ))}
                 </div>
@@ -152,7 +187,11 @@ const CustomerList = () => {
                     <div className="text-center text-graytext py-10">Không tìm thấy khách hàng nào.</div>
                 ) : (
                     filteredCustomers.map((cus, idx) => (
-                        <div key={idx} className="glass-panel p-6 rounded-[24px] flex flex-col md:flex-row md:items-center justify-between group cursor-pointer hover:bg-white/5 transition-all gap-4">
+                        <div 
+                            key={idx} 
+                            onClick={() => setSelectedShow(cus)} 
+                            className="glass-panel p-6 rounded-[24px] flex flex-col md:flex-row md:items-center justify-between group cursor-pointer hover:bg-white/5 transition-all gap-4 active:scale-[0.98]"
+                        >
                             <div className="flex items-center gap-5">
                                 <div className={`w-14 h-14 rounded-full flex items-center justify-center text-xl font-serif font-bold shrink-0 ${
                                     cus.Status === 'Done' ? 'bg-success/20 text-success' : 'bg-gold/20 text-gold'
@@ -181,13 +220,22 @@ const CustomerList = () => {
                                     cus.Status === 'Deposited' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' :
                                     'bg-warning/10 text-warning border-warning/20'
                                 }`}>
-                                    {cus.Status}
+                                    {STATUS_LABELS[cus.Status] || cus.Status}
                                 </span>
                             </div>
                         </div>
                     ))
                 )}
             </div>
+
+            {/* ✅ MODAL HIỂN THỊ CHI TIẾT */}
+            {selectedShow && (
+                <ShowDetailModal 
+                    show={selectedShow} 
+                    onClose={() => setSelectedShow(null)} 
+                    onUpdate={fetchData} // Truyền hàm refresh để cập nhật list sau khi sửa
+                />
+            )}
         </div>
     );
 };

@@ -1,7 +1,11 @@
 // src/services/api.js
 
-// ⚠️ QUAN TRỌNG: Thay dòng bên dưới bằng Link thật của bạn
-const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbylcm-D5CGZG7Xr3Cyn9ObLynrrajBCQGLgvEafR9tDVQ-ceTqOeYC3LoHsqMEAnHSQjA/exec"; 
+// ⚠️ Sử dụng biến môi trường từ .env.local
+const WEB_APP_URL = import.meta.env.VITE_API_URL;
+
+if (!WEB_APP_URL) {
+    console.error("❌ Chưa cấu hình VITE_API_URL trong file .env.local");
+} 
 
 export const createNewShow = async (data) => {
     try {
@@ -76,8 +80,50 @@ export const getShows = async () => {
     }
 };
 
+// ✅ HÀM MỚI: Cập nhật Show (Status, PaidAmount, etc.)
+export const updateShow = async (id, updateData) => {
+    try {
+        // updateData là object chứa các trường cần sửa. VD: { Status: 'Done', PaidAmount: 1000000 }
+        const payload = { ID: id, ...updateData };
+        
+        console.log("🚀 [API] Updating show...", {
+            url: WEB_APP_URL,
+            payload: payload
+        });
+
+        const response = await fetch(WEB_APP_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({ action: 'updateShow', payload: payload })
+        });
+
+        const text = await response.text();
+        console.log("📥 [API] Update Response Raw:", text);
+
+        let result;
+        try {
+            result = JSON.parse(text);
+        } catch (e) {
+            console.error("❌ [API] Non-JSON Response:", text);
+            throw new Error("Server trả về dữ liệu lỗi (HTML/Text). Kiểm tra Deployment.");
+        }
+
+        if(result.status === 'success') {
+            console.log("✅ [API] Update Success");
+            return true;
+        } else {
+            console.error("❌ [API] Update Failed:", result);
+            return false;
+        }
+    } catch (error) {
+        console.error("🔥 [API] Network/System Error:", error);
+        return false;
+    }
+};
+
 // ⚠️ BACKWARD COMPATIBILITY: Giữ lại object api để tránh lỗi import cũ
 export const api = {
     getShows,
-    addShow: createNewShow
+    addShow: createNewShow,
+    updateShow
 };
