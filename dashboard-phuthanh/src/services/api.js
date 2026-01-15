@@ -202,6 +202,25 @@ export const deleteLead = async (leadId) => {
     }
 };
 
+// ✅ HÀM MỚI: Lấy sự kiện từ Google Calendar
+export const getCalendarEvents = async (month, year) => {
+    try {
+        const response = await fetch(`${WEB_APP_URL}?action=getCalendar&month=${month}&year=${year}`);
+        const text = await response.text();
+        
+        if (text.trim().startsWith("<!DOCTYPE") || text.includes("<html")) {
+            console.error("API returned HTML instead of JSON for getCalendar");
+            return [];
+        }
+        
+        const result = JSON.parse(text);
+        return result.status === 'success' ? result.data : [];
+    } catch (error) {
+        console.error("Lỗi lấy lịch:", error);
+        return [];
+    }
+};
+
 // ⚠️ BACKWARD COMPATIBILITY: Giữ lại object api để tránh lỗi import cũ
 export const api = {
     getShows,
@@ -209,5 +228,6 @@ export const api = {
     updateShow,
     getLeads,
     createLead,
-    deleteLead
+    deleteLead,
+    getCalendarEvents
 };
