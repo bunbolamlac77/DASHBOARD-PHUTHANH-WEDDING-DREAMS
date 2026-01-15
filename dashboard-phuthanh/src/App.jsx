@@ -4,6 +4,7 @@ import Sidebar from './components/Sidebar'
 import Dashboard from './components/Dashboard'
 import CustomerList from './components/CustomerList'
 import QuoteMaker from './components/QuoteMaker'
+import LeadList from './components/LeadList'
 
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -49,6 +50,7 @@ function App() {
                     {activeTab === 'dashboard' && 'Dashboard Overview'}
                     {activeTab === 'customers' && 'Danh sách Show'}
                     {activeTab === 'quote' && 'Tạo Báo Giá'}
+                    {activeTab === 'leads' && 'Danh Sách Chờ (Leads)'}
                     {activeTab === 'calendar' && 'Lịch Trình'}
                     {activeTab === 'settings' && 'Cài đặt'}
                 </h2>
@@ -61,6 +63,7 @@ function App() {
             {activeTab === 'dashboard' && <Dashboard />}
             {activeTab === 'customers' && <CustomerList />}
             {activeTab === 'quote' && <QuoteMaker />}
+            {activeTab === 'leads' && <LeadList />}
             
             {/* Placeholder cho các tab chưa làm */}
             {(activeTab === 'calendar' || activeTab === 'settings') && (

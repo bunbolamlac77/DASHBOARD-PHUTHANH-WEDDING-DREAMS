@@ -121,9 +121,93 @@ export const updateShow = async (id, updateData) => {
     }
 };
 
+// ✅ HÀM MỚI: Lấy danh sách khách tiềm năng
+export const getLeads = async () => {
+    try {
+        const response = await fetch(`${WEB_APP_URL}?action=getLeads`);
+        const text = await response.text();
+        
+        if (text.trim().startsWith("<!DOCTYPE") || text.includes("<html")) {
+            console.error("API returned HTML instead of JSON for getLeads");
+            return [];
+        }
+        
+        const result = JSON.parse(text);
+        return result.status === 'success' ? result.data : [];
+    } catch (error) {
+        console.error("Lỗi lấy danh sách Leads:", error);
+        return [];
+    }
+};
+
+// ✅ HÀM MỚI: Lưu khách tiềm năng (Nháp)
+export const createLead = async (data) => {
+    try {
+        console.log("Đang gửi yêu cầu tạo Lead...", data);
+        const response = await fetch(WEB_APP_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({ action: 'addLead', payload: data })
+        });
+        
+        const text = await response.text();
+        console.log("Create Lead Response:", text);
+        
+        try {
+            const result = JSON.parse(text);
+            if (result.status === 'success') {
+                return true;
+            } else {
+                console.error("Server trả về lỗi:", result.message);
+                return false;
+            }
+        } catch (e) {
+            console.error("Không thể đọc phản hồi từ server (lỗi JSON):", text);
+            return false;
+        }
+    } catch (error) {
+        console.error("Lỗi kết nối tạo Lead:", error);
+        return false;
+    }
+};
+
+// ✅ HÀM MỚI: Xóa khách tiềm năng
+export const deleteLead = async (leadId) => {
+    try {
+        console.log("Đang gửi yêu cầu xóa Lead:", leadId);
+        const response = await fetch(WEB_APP_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({ action: 'deleteLead', payload: { ID: leadId } })
+        });
+        
+        const text = await response.text();
+        console.log("Delete Lead Response:", text);
+        
+        try {
+            const result = JSON.parse(text);
+            if (result.status === 'success') {
+                return true;
+            } else {
+                console.error("Server trả về lỗi:", result.message);
+                return false;
+            }
+        } catch (e) {
+            console.error("Không thể đọc phản hồi từ server (lỗi JSON):", text);
+            return false;
+        }
+    } catch (error) {
+        console.error("Lỗi kết nối xóa Lead:", error);
+        return false;
+    }
+};
+
 // ⚠️ BACKWARD COMPATIBILITY: Giữ lại object api để tránh lỗi import cũ
 export const api = {
     getShows,
     addShow: createNewShow,
-    updateShow
+    updateShow,
+    getLeads,
+    createLead,
+    deleteLead
 };

@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { toPng } from 'html-to-image';
-import { Plus, Trash2, Camera, Download, CheckCircle, Save, MapPin, Calendar, Phone, User, Loader2, Copy } from 'lucide-react';
-import { createNewShow } from '../services/api';
+import { Plus, Trash2, Camera, Download, CheckCircle, Save, MapPin, Calendar, Phone, User, Loader2, Copy, Bookmark } from 'lucide-react';
+import { createNewShow, createLead } from '../services/api';
 import QRCode from 'qrcode';
 
 // --- CẤU HÌNH DỮ LIỆU GÓI CHỤP ---
@@ -225,6 +225,27 @@ const QuoteMaker = () => {
       console.error('Lỗi tạo ảnh QR thanh toán:', err);
       alert(`Không thể tạo ảnh QR. Lỗi: ${err.message || err}`);
     }
+  };
+  
+  // --- HÀM LƯU NHÁP (KHÁCH TIỀM NĂNG) ---
+  const handleSaveDraft = async () => {
+    if(!customerInfo.groom && !customerInfo.bride) return alert("Nhập ít nhất 1 tên để lưu nháp!");
+
+    setIsSaving(true);
+    const leadData = {
+        Name: `${customerInfo.groom} - ${customerInfo.bride}`,
+        Phone: customerInfo.phone,
+        Date: customerInfo.dates,
+        Note: `Quan tâm: ${selectedItems.map(i => i.name).join(', ')}. Tổng: ${totalAmount.toLocaleString()}đ`
+    };
+
+    const success = await createLead(leadData);
+    if (success) {
+      alert("Đã lưu vào danh sách tiềm năng!");
+    } else {
+      alert("Có lỗi khi lưu. Vui lòng thử lại!");
+    }
+    setIsSaving(false);
   };
   
   // --- LƯU & XÁC NHẬN CỌC ---
@@ -511,6 +532,13 @@ const QuoteMaker = () => {
                         <button onClick={handleSaveToSheet} disabled={isSaving} className="flex-1 py-3 bg-success text-white font-bold rounded-xl shadow-lg hover:bg-success/80 transition-colors flex items-center justify-center gap-2">
                             {isSaving ? <Loader2 className="animate-spin"/> : <Save />} 
                             LƯU HỒ SƠ
+                        </button>
+                        <button 
+                            onClick={handleSaveDraft}
+                            disabled={isSaving} 
+                            className="px-4 py-3 bg-white/10 text-gold font-bold rounded-xl hover:bg-white/20 transition-colors flex items-center gap-2">
+                            <Bookmark size={20} />
+                            Lưu Nháp
                         </button>
                         <button onClick={() => { setGeneratedImage(null); setPaymentQrImage(null); }} className="px-6 py-3 bg-white/10 text-cream font-bold rounded-xl hover:bg-white/20 transition-colors">
                             Làm mới

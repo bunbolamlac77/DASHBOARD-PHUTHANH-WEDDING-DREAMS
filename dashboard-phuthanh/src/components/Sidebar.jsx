@@ -1,4 +1,4 @@
-import { LayoutDashboard, Users, FilePlus, Calendar, Settings, LogOut, X } from 'lucide-react';
+import { LayoutDashboard, Users, FilePlus, Calendar, Settings, LogOut, X, Bookmark } from 'lucide-react';
 
 const Sidebar = ({ activeTab, setActiveTab, isOpen, onClose }) => {
   
@@ -53,6 +53,10 @@ const Sidebar = ({ activeTab, setActiveTab, isOpen, onClose }) => {
             <button onClick={() => handleNavClick('quote')} className={getNavItemClass('quote')}>
                 <FilePlus size={20} />
                 <span className="font-medium">Tạo Báo Giá</span>
+            </button>
+            <button onClick={() => handleNavClick('leads')} className={getNavItemClass('leads')}>
+                <Bookmark size={20} />
+                <span className="font-medium">Khách Tiềm Năng</span>
             </button>
              <button onClick={() => handleNavClick('calendar')} className={getNavItemClass('calendar')}>
                 <Calendar size={20} />
