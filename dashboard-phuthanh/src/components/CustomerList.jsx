@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Filter, Phone, Calendar, CheckCircle, Clock } from 'lucide-react';
 import { getShows } from '../services/api'; // ✅ Import hàm chuẩn từ api.js
-import Toast from './Toast';
 
 const CustomerList = () => {
     const [customers, setCustomers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [filterStatus, setFilterStatus] = useState('All');
-    const [toast, setToast] = useState({ show: false, message: '', type: 'info' });
+    const [error, setError] = useState(null); // State lưu lỗi
 
     // Helper: Normalize keys to lowercase to avoid case sensitivity issues
     const normalizeData = (data) => {
@@ -35,6 +34,7 @@ const CustomerList = () => {
     useEffect(() => {
         const fetchData = async () => {
             setLoading(true);
+            setError(null); // Reset error trước khi gọi lại
             try {
                 const rawData = await getShows();
                 if (Array.isArray(rawData)) {
@@ -60,12 +60,7 @@ const CustomerList = () => {
                 }
             } catch (err) {
                 console.error("Error loading data:", err);
-                setToast({
-                    show: true,
-                    message: err.message || 'Không thể tải danh sách khách hàng',
-                    type: 'error'
-                });
-                setCustomers([]); // Set empty array on error
+                setError(err.message); // Hiển thị lỗi ra UI
             } finally {
                 setLoading(false);
             }
@@ -140,6 +135,19 @@ const CustomerList = () => {
             <div className="space-y-4 pb-20 overflow-y-auto no-scrollbar flex-1">
                 {loading ? (
                     <div className="text-center text-graytext py-10">Đang tải dữ liệu từ Google Sheets...</div>
+                ) : error ? (
+                    <div className="text-center py-10 px-4">
+                        <div className="inline-block bg-red-500/10 border border-red-500/20 rounded-2xl p-6 max-w-lg">
+                            <h3 className="text-red-400 font-bold text-lg mb-2">Đã xảy ra lỗi!</h3>
+                            <p className="text-gray-300 text-sm mb-4">{error}</p>
+                            <button 
+                                onClick={() => window.location.reload()}
+                                className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm font-bold transition-colors"
+                            >
+                                Tải lại trang
+                            </button>
+                        </div>
+                    </div>
                 ) : filteredCustomers.length === 0 ? (
                     <div className="text-center text-graytext py-10">Không tìm thấy khách hàng nào.</div>
                 ) : (
@@ -180,15 +188,6 @@ const CustomerList = () => {
                     ))
                 )}
             </div>
-            
-            {/* Toast Notification */}
-            {toast.show && (
-                <Toast 
-                    message={toast.message}
-                    type={toast.type}
-                    onClose={() => setToast({ ...toast, show: false })}
-                />
-            )}
         </div>
     );
 };

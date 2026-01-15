@@ -1,8 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { toPng } from 'html-to-image';
 import { Plus, Trash2, Camera, Download, CheckCircle, Save, MapPin, Calendar, Phone, User, Loader2, Copy } from 'lucide-react';
-import { createNewShow, getServices } from '../services/api';
-import Toast from './Toast';
+import { createNewShow } from '../services/api';
 import QRCode from 'qrcode';
 
 // --- CẤU HÌNH DỮ LIỆU GÓI CHỤP ---
@@ -106,47 +105,10 @@ const QuoteMaker = () => {
   const [isSaving, setIsSaving] = useState(false); // Trạng thái đang lưu
   const [qrDataUrl, setQrDataUrl] = useState(''); // QR code as data URL
   const [showAddedToast, setShowAddedToast] = useState(false); // Show toast when package added
-  
-  // ✅ NEW: Dynamic services from API
-  const [packages, setPackages] = useState({ wedding: [], video: [] });
-  const [loadingServices, setLoadingServices] = useState(true);
-  const [toast, setToast] = useState({ show: false, message: '', type: 'info' });
 
   const receiptRef = useRef(null); // Ref để chụp ảnh vùng báo giá
   const paymentQrRef = useRef(null); // Ref để chụp ảnh QR thanh toán
   const previewContainerRef = useRef(null); // Ref cho container preview
-
-  // ✅ NEW: Load services from API on mount
-  useEffect(() => {
-    const loadServices = async () => {
-      try {
-        setLoadingServices(true);
-        const services = await getServices();
-        
-        // Group by category
-        const grouped = {
-          wedding: services.filter(s => s.category === 'wedding'),
-          video: services.filter(s => s.category === 'video')
-        };
-        
-        setPackages(grouped);
-        console.log('Loaded services from API:', grouped);
-      } catch (error) {
-        console.error('Failed to load services:', error);
-        // Fallback to hardcoded packages
-        setPackages(PACKAGES);
-        setToast({ 
-          show: true, 
-          message: 'Không load được gói chụp từ server, dùng dữ liệu mặc định', 
-          type: 'warning' 
-        });
-      } finally {
-        setLoadingServices(false);
-      }
-    };
-    
-    loadServices();
-  }, []);
 
   // --- LOGIC TÍNH TOÁN ---
   const calculateTotal = () => {
@@ -267,10 +229,7 @@ const QuoteMaker = () => {
   
   // --- LƯU & XÁC NHẬN CỌC ---
   const handleSaveToSheet = async () => {
-    if(!customerInfo.groom && !customerInfo.bride) {
-      setToast({ show: true, message: 'Vui lòng nhập tên Dâu/Rể', type: 'error' });
-      return;
-    }
+    if(!customerInfo.groom && !customerInfo.bride) return alert("Vui lòng nhập tên Dâu/Rể");
     
     setIsSaving(true);
     const payload = {
@@ -282,7 +241,7 @@ const QuoteMaker = () => {
       ServiceList: selectedItems.map(i => i.name).join(', ') + (extraCosts.length ? ' + Phát sinh' : ''),
       TotalAmount: totalAmount,
       Deposit: depositAmount,
-      Status: 'Confirmed',
+      Status: 'Confirmed', // Đánh dấu là đã xác nhận thông tin
       Notes: 'Khách đã xác nhận thông tin qua App'
     };
 
@@ -290,27 +249,16 @@ const QuoteMaker = () => {
       console.log("Sending to Sheet:", payload);
       await createNewShow(payload); 
       
-      setToast({ 
-        show: true, 
-        message: `Đã lưu hồ sơ của ${customerInfo.groom} & ${customerInfo.bride} thành công!`,
-        type: 'success'
-      });
-      
-      // Reset form sau 2 giây
-      setTimeout(() => {
-        setGeneratedImage(null);
-        setPaymentQrImage(null);
-        setSelectedItems([]);
-        setExtraCosts([]);
-        setCustomerInfo({ groom: '', bride: '', phone: '', dates: '', location1: '', location2: '' });
-      }, 2000);
+      alert(`Đã lưu hồ sơ của ${customerInfo.groom} & ${customerInfo.bride} thành công!`);
+      // Reset form
+      setGeneratedImage(null);
+      setPaymentQrImage(null);
+      setSelectedItems([]);
+      setExtraCosts([]);
+      setCustomerInfo({ groom: '', bride: '', phone: '', dates: '', location1: '', location2: '' });
     } catch (error) {
       console.error(error);
-      setToast({ 
-        show: true, 
-        message: error.message || 'Lỗi khi lưu dữ liệu!',
-        type: 'error'
-      });
+      alert('Lỗi khi lưu dữ liệu!');
     } finally {
       setIsSaving(false);
     }
@@ -405,31 +353,23 @@ const QuoteMaker = () => {
             <Camera size={18} /> Chọn Gói Chụp (Sáng)
           </h3>
           
-          {/* Loading state */}
-          {loadingServices ? (
-            <div className="text-center py-4 text-graytext">
-              <Loader2 className="animate-spin mx-auto mb-2" size={24} />
-              <p className="text-sm">Đang tải gói chụp...</p>
-            </div>
-          ) : (
+          {/* Tabs giả lập */}
           <div className="space-y-4">
+
+            
             <div>
               <p className="text-xs text-graytext mb-2 uppercase font-bold">Gói Cưới & Video</p>
               <div className="grid grid-cols-1 gap-2">
-                {[...packages.wedding, ...packages.video].map(pkg => (
+                {[...PACKAGES.wedding, ...PACKAGES.video].map(pkg => (
                   <button key={pkg.id} onClick={() => handleAddPackage(pkg)} 
                     className="flex justify-between p-3 rounded-xl bg-white/5 hover:bg-gold/10 hover:border-gold border border-transparent transition-all text-sm text-left group">
                     <span className="group-hover:text-gold">{pkg.name}</span>
                     <span className="font-bold text-cream">{pkg.price.toLocaleString()}đ</span>
                   </button>
                 ))}
-                {packages.wedding.length === 0 && packages.video.length === 0 && (
-                  <p className="text-xs text-gray-500 italic text-center py-4">Không có gói chụp nào</p>
-                )}
               </div>
             </div>
           </div>
-          )}
         </div>
 
         {/* 2.5 Gói đã chọn */}
@@ -732,15 +672,6 @@ const QuoteMaker = () => {
             <span className="font-medium">Đã thêm gói chụp!</span>
           </div>
         </div>
-      )}
-      
-      {/* Error/Success Toast */}
-      {toast.show && (
-        <Toast 
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast({ ...toast, show: false })}
-        />
       )}
     </div>
   );
