@@ -252,6 +252,88 @@ export const quickAddCalendar = async (data) => {
     }
 };
 
+// ✅ HÀM MỚI: Lấy Cấu hình (Config)
+export const getConfig = async () => {
+    try {
+        const response = await fetch(`${WEB_APP_URL}?action=getConfig`);
+        const text = await response.text();
+        if (text.trim().startsWith("<!DOCTYPE") || text.includes("<html")) return {};
+        const result = JSON.parse(text);
+        return result.status === 'success' ? result.data : {};
+    } catch (error) {
+        console.error("Lỗi lấy Cấu hình:", error);
+        return {};
+    }
+};
+
+// ✅ HÀM MỚI: Cập nhật Cấu hình
+export const updateConfig = async (data) => {
+    try {
+        const response = await fetch(WEB_APP_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({ action: 'updateConfig', payload: data })
+        });
+        const text = await response.text();
+        const result = JSON.parse(text);
+        return result.status === 'success';
+    } catch (error) {
+        console.error("Lỗi cập nhật Cấu hình:", error);
+        return false;
+    }
+};
+
+// ✅ HÀM MỚI: Thêm Dịch vụ
+export const addService = async (data) => {
+    try {
+        const response = await fetch(WEB_APP_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({ action: 'addService', payload: data })
+        });
+        const text = await response.text();
+        const result = JSON.parse(text);
+        return result.status === 'success';
+    } catch (error) {
+        console.error("Lỗi thêm Dịch vụ:", error);
+        return false;
+    }
+};
+
+// ✅ HÀM MỚI: Cập nhật Dịch vụ
+export const updateService = async (data) => {
+    try {
+        const response = await fetch(WEB_APP_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({ action: 'updateService', payload: data })
+        });
+        const text = await response.text();
+        const result = JSON.parse(text);
+        return result.status === 'success';
+    } catch (error) {
+        console.error("Lỗi cập nhật Dịch vụ:", error);
+        return false;
+    }
+};
+
+// ✅ HÀM MỚI: Xóa Dịch vụ
+export const deleteService = async (id) => {
+    try {
+        const response = await fetch(WEB_APP_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({ action: 'deleteService', payload: { id } })
+        });
+        const text = await response.text();
+        const result = JSON.parse(text);
+        return result.status === 'success';
+    } catch (error) {
+        console.error("Lỗi xóa Dịch vụ:", error);
+        return false;
+    }
+};
+
 // ⚠️ BACKWARD COMPATIBILITY: Giữ lại object api để tránh lỗi import cũ
 export const api = {
     getShows,
@@ -262,5 +344,10 @@ export const api = {
     deleteLead,
     getCalendarEvents,
     getServices,
-    quickAddCalendar
+    quickAddCalendar,
+    getConfig,
+    updateConfig,
+    addService,
+    updateService,
+    deleteService
 };

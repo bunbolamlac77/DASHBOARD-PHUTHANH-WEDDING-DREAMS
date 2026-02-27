@@ -1,83 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { toPng } from 'html-to-image';
 import { Plus, Trash2, Camera, Download, CheckCircle, Save, MapPin, Calendar, Phone, User, Loader2, Copy, Bookmark } from 'lucide-react';
-import { createNewShow, createLead, getServices } from '../services/api';
+import { createNewShow, createLead, getServices, getConfig } from '../services/api';
 import QRCode from 'qrcode';
 
-// --- CẤU HÌNH DỮ LIỆU GÓI CHỤP ---
-const PACKAGES = {
-  wedding: [
-    { 
-      id: 'wed1', 
-      name: 'Truyền Thống Cưới', 
-      price: 2800000,
-      deliverables: [
-        'Nhân sự: 01 Thợ chụp chuyên nghiệp',
-        'Thời gian: 01 Buổi (Dưới 6 giờ chụp)',
-        'Số lượng file: Chụp KHÔNG GIỚI HẠN trong suốt buổi lễ',
-        'Quy trình chụp: Chụp chân dung Dâu và gia đình + Chụp gia đình trước bàn thờ gia tiên và cổng hoa + Chụp toàn bộ diễn biến buổi Lễ (theo sắp xếp của bác trưởng tộc) + Chụp dàn mâm quả, chú rể đi vào + Chụp chân dung Dâu Rể, gia đình 2 bên tại cổng và gia tiên + Chụp Check-in với khách mời tại bàn tiệc/cổng',
-        'Đặc quyền Hậu kỳ (Nổi bật): 🎨 Tất cả các hình ảnh được xử lý chuyên sâu: Làm màu nghệ thuật + Làm mịn da + Chỉnh sửa chi tiết (xóa khuyết điểm, bóp gọn tay chân nhẹ nhàng, tự nhiên)',
-        'Sản phẩm nhận được: 📸 Album 100 ảnh 13x18 High Quality: In lụa cao cấp, không ép nhựa (đã có lớp bảo vệ chống ẩm mốc)',
-        'Sản phẩm nhận được: 🖼️ 01 Ảnh lớn treo tường 40x60cm chất lượng cao sang trọng',
-        'Sản phẩm nhận được: 🎁 Trải nghiệm ý nghĩa: Dâu Rể TỰ TAY CHỌN HÌNH và TỰ TAY LỐNG ẢNH vào album theo ý thích để lưu giữ kỷ niệm'
-      ]
-    },
-    { 
-      id: 'wed2', 
-      name: 'Truyền Thống Lai Phóng Sự Cưới', 
-      price: 3500000,
-      deliverables: [
-        'Nhân sự: 01 Thợ chụp chuyên nghiệp (Chuyên bắt khoảnh khắc)',
-        'Thời gian: 01 Buổi (Dưới 6 giờ)',
-        'Số lượng file: Chụp KHÔNG GIỚI HẠN - Chú trọng cảm xúc thực',
-        'Quy trình chụp (Trước Khi Nhà Trai Tới): Chụp Flatlay: Thiệp cưới, giày cưới (Dâu chuẩn bị trước) + Chụp khoảnh khắc Dâu đang Makeup + Chụp Dâu và Manocanh mặc áo dài + Bắt trọn khoảnh khắc chuẩn bị, tất bật đầy cảm xúc của người thân',
-        'Quy trình chụp (Chân dung & Tập thể): Chụp chân dung Dâu nghệ thuật (Dâu dành thời gian riêng cho phần này nhé) + Chụp Dâu cùng dàn bưng mâm & Gia đình trước bàn thờ gia tiên/cổng hoa',
-        'Quy trình chụp (Nhà Trai Tới & Làm Lễ): Chụp tập thể nhà trai, rể phụ và chú rể trình lễ + Bắt khoảnh khắc trao mâm và đón dâu tại cổng + Chụp trọn bộ diễn biến Lễ Gia Tiên (theo sắp xếp của trưởng tộc) + Chụp check-in khách mời tại bàn tiệc/cổng hoa',
-        'Đặc quyền Hậu kỳ (Nổi bật): 🎨 Tất cả các hình ảnh được xử lý chuyên sâu: Làm màu nghệ thuật + Làm mịn da + Chỉnh sửa chi tiết (xóa khuyết điểm, bóp gọn tay chân nhẹ nhàng, tự nhiên)',
-        'Sản phẩm nhận được: 📸 Album 100 ảnh 13x18 High Quality: In lụa cao cấp, không ép nhựa (đã có lớp bảo vệ chống ẩm mốc)',
-        'Sản phẩm nhận được: 🖼️ 02 Ảnh lớn treo tường 40x60cm chất lượng cao sang trọng',
-        'Sản phẩm nhận được: 🎁 Trải nghiệm ý nghĩa: Dâu Rể TỰ TAY CHỌN HÌNH và TỰ TAY LỐNG ẢNH vào album theo ý thích để lưu giữ kỷ niệm'
-      ]
-    },
-    { 
-      id: 'wed3', 
-      name: 'Gói Trọn Vẹn Cảm Xúc (Combo 02 Thợ)', 
-      price: 4800000,
-      deliverables: [
-        'Nhân sự cao cấp: 01 Thợ Truyền Thống: Chuyên trách các góc máy chuẩn mực, lễ nghi, gia đình + 01 Thợ Phóng Sự: Chuyên bắt khoảnh khắc, cảm xúc tự nhiên và góc máy nghệ thuật',
-        'Thời gian: 01 Buổi (Dưới 6 giờ)',
-        'Số lượng file: Chụp KHÔNG GIỚI HẠN - Đảm bảo góc nhìn đa dạng từ 2 thợ',
-        'Quy trình chụp (Trước Khi Nhà Trai Tới): Chụp Flatlay: Thiệp cưới, giày cưới (Dâu chuẩn bị trước) + Chụp khoảnh khắc Dâu đang Makeup + Chụp Dâu và Manocanh mặc áo dài + Bắt trọn khoảnh khắc chuẩn bị, tất bật đầy cảm xúc của người thân',
-        'Quy trình chụp (Chân dung & Tập thể): Chụp chân dung Dâu nghệ thuật (Dâu dành thời gian riêng cho phần này nhé) + Chụp Dâu cùng dàn bưng mâm & Gia đình trước bàn thờ gia tiên/cổng hoa',
-        'Quy trình chụp (Nhà Trai Tới & Làm Lễ): Chụp tập thể nhà trai, rể phụ và chú rể trình lễ + Bắt khoảnh khắc trao mâm và đón dâu tại cổng + Chụp trọn bộ diễn biến Lễ Gia Tiên (theo sắp xếp của trưởng tộc) + Chụp check-in khách mời tại bàn tiệc/cổng hoa',
-        'Đặc quyền Hậu kỳ (Nổi bật): 🎨 Tất cả các hình ảnh được xử lý chuyên sâu: Làm màu nghệ thuật + Làm mịn da + Chỉnh sửa chi tiết (xóa khuyết điểm, bóp gọn tay chân nhẹ nhàng, tự nhiên)',
-        'Sản phẩm nhận được: 📸 Album Photobook Cao Cấp: Size lớn 25cm x 35cm (15 tờ - 30 trang - 150 ảnh)',
-        'Sản phẩm nhận được: 🖼️ 02 Ảnh lớn treo tường 40x60cm chất lượng cao sang trọng',
-        'Sản phẩm nhận được: 🎁 Trải nghiệm ý nghĩa: Dâu Rể TỰ TAY CHỌN HÌNH và TỰ TAY LỐNG ẢNH vào album theo ý thích để lưu giữ kỷ niệm'
-      ]
-    },
-  ],
-  video: [
-    { 
-      id: 'vid1', 
-      name: 'Quay Phim Highlight (Demo)', 
-      price: 4000000,
-      deliverables: [
-        'Video highlight chuyên nghiệp',
-        'Thời lượng: 3-5 phút',
-        'Chỉnh sửa chuyên nghiệp',
-        'Nhạc nền bản quyền'
-      ]
-    },
-  ]
-};
-
-// --- CẤU HÌNH TÀI KHOẢN NGÂN HÀNG (Thay đổi thông tin của bạn ở đây) ---
-const BANK_INFO = {
-  BANK_ID: 'ICB', // VietinBank
-  ACCOUNT_NO: '0764816715',
-  ACCOUNT_NAME: 'TANG HUYNH THANH PHU'
-};
+// --- CẤU HÌNH DỮ LIỆU ĐÃ CHUYỂN LÊN SHEETS ---
+// Các gói dịch vụ và thông tin ngân hàng nay được kéo từ Google Sheets (Config & Services)
 
 // --- CẤU HÌNH CHI PHÍ PHÁT SINH ---
 const EXTRA_OPTIONS = [
@@ -100,14 +28,24 @@ const QuoteMaker = () => {
   const [packagesList, setPackagesList] = useState([]);
   const [isLoadingPackages, setIsLoadingPackages] = useState(true);
 
+  const [appConfig, setAppConfig] = useState(null);
+
   useEffect(() => {
-    const fetchPackages = async () => {
+    const fetchData = async () => {
         setIsLoadingPackages(true);
-        const data = await getServices();
-        setPackagesList(data);
+        try {
+            const [servicesData, configData] = await Promise.all([
+                getServices(),
+                getConfig()
+            ]);
+            setPackagesList(servicesData);
+            setAppConfig(configData);
+        } catch (e) {
+            console.error("Failed to fetch data:", e);
+        }
         setIsLoadingPackages(false);
     };
-    fetchPackages();
+    fetchData();
   }, []);
   
   const [selectedItems, setSelectedItems] = useState([]); // Danh sách gói đã chọn
@@ -309,17 +247,19 @@ const QuoteMaker = () => {
         const brideName = customerInfo.bride || 'Phu';
         const dateStr = customerInfo.dates || '';
         const addInfo = `${groomName} ${brideName} ${dateStr}`.trim();
-        const accountName = BANK_INFO.ACCOUNT_NAME;
+        const accountName = appConfig?.accountName || 'TANG HUYNH THANH PHU';
+        const bankId = appConfig?.bankId || 'ICB';
+        const accountNo = appConfig?.accountNo || '0764816715';
         
         // Construct VietQR URL
         // Format: https://img.vietqr.io/image/<BANK_ID>-<ACCOUNT_NO>-<TEMPLATE>.png
-        const url = `https://img.vietqr.io/image/${BANK_INFO.BANK_ID}-${BANK_INFO.ACCOUNT_NO}-print.png?amount=${amount}&addInfo=${encodeURIComponent(addInfo)}&accountName=${encodeURIComponent(accountName)}`;
+        const url = `https://img.vietqr.io/image/${bankId}-${accountNo}-print.png?amount=${amount}&addInfo=${encodeURIComponent(addInfo)}&accountName=${encodeURIComponent(accountName)}`;
         
         setQrDataUrl(url);
     };
     
     generateQR();
-  }, [depositAmount, customerInfo.dates, customerInfo.groom, customerInfo.bride]);
+  }, [depositAmount, customerInfo.dates, customerInfo.groom, customerInfo.bride, appConfig]);
 
   // --- SAO CHÉP ẢNH VÀO CLIPBOARD ---
   const handleCopyImage = async (imageSrc) => {
@@ -571,10 +511,25 @@ const QuoteMaker = () => {
             <div className="w-full max-w-6xl mx-auto"> 
                 <div ref={receiptRef} className="bg-[#0B1410] text-cream p-6 md:p-8 w-full border border-gold/30 relative rounded-2xl">
                     
-                    {/* Header - Chỉ có Title */}
-                    <div className="text-center mb-6">
-                        <h1 className="font-serif text-xl md:text-2xl text-gold tracking-wide uppercase">Bảng Báo Giá Gói Chụp</h1>
-                        <div className="w-32 h-px bg-gradient-to-r from-transparent via-gold to-transparent mx-auto mt-2"></div>
+                    {/* Header - Configurable */}
+                    <div className="flex justify-between items-center border-b border-gold/30 pb-4 mb-6">
+                        <div className="flex items-center gap-3">
+                            {appConfig?.studioLogo ? (
+                                <img src={appConfig.studioLogo} alt="Logo" className="w-12 h-12 object-contain" />
+                            ) : (
+                                <div className="w-12 h-12 bg-gold/10 rounded-full flex items-center justify-center border border-gold/30">
+                                    <span className="text-gold font-serif font-bold text-xl">PT</span>
+                                </div>
+                            )}
+                            <div>
+                                <h1 className="font-serif text-lg md:text-xl text-gold uppercase tracking-wide">{appConfig?.studioName || 'PHU THANH WEDDING'}</h1>
+                                <p className="text-[10px] text-gray-400">Hotline/Zalo: {appConfig?.studioPhone || '076 481 6715'}</p>
+                                <p className="text-[10px] text-gray-400">Địa chỉ: {appConfig?.studioAddress || 'Cập nhật địa chỉ studio'}</p>
+                            </div>
+                        </div>
+                        <div className="text-right">
+                            <h2 className="font-serif text-xl md:text-2xl text-cream uppercase">Báo Giá</h2>
+                        </div>
                     </div>
 
                     {/* Main Content - Grid Layout responsive */}
@@ -663,7 +618,7 @@ const QuoteMaker = () => {
                         </div>
                     </div>
 
-                    <p className="text-[10px] text-center text-gray-500 mt-6 italic">Cảm ơn bạn đã lựa chọn Phu Thanh Wedding Dreams!</p>
+                    <p className="text-[10px] text-center text-gray-500 mt-6 italic">{appConfig?.studioNotes || 'Cảm ơn bạn đã lựa chọn Phu Thanh Wedding Dreams!'}</p>
                 </div>
             </div>
         )}

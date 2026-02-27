@@ -6,6 +6,7 @@ import CustomerList from './components/CustomerList'
 import QuoteMaker from './components/QuoteMaker'
 import LeadList from './components/LeadList'
 import CalendarView from './components/CalendarView'
+import Settings from './components/Settings'
 
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -66,13 +67,7 @@ function App() {
             {activeTab === 'quote' && <QuoteMaker />}
             {activeTab === 'leads' && <LeadList />}
             {activeTab === 'calendar' && <CalendarView />}
-            
-            {/* Placeholder cho các tab chưa làm */}
-            {activeTab === 'settings' && (
-                <div className="flex items-center justify-center h-full text-graytext opacity-50">
-                    Chức năng đang phát triển...
-                </div>
-            )}
+            {activeTab === 'settings' && <Settings />}
         </div>
       </main>
     </div>
