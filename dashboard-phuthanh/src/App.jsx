@@ -18,7 +18,7 @@ function App() {
       {/* Mobile Header */}
       <div className="md:hidden flex items-center justify-between px-6 py-4 bg-deep border-b border-white/5 z-30 shrink-0">
          <div className="flex items-center gap-3">
-            <img src="/logo.png" alt="Phu Thanh Wedding" className="w-8 h-8 object-contain" />
+            <img src="/logo.png" alt="Phu Thanh Wedding Dreams" className="w-8 h-8 object-contain" />
             <h1 className="font-serif text-lg text-gold leading-none">Phu Thanh</h1>
          </div>
          <button onClick={() => setIsMobileMenuOpen(true)} className="text-cream p-2">

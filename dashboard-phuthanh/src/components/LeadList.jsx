@@ -12,7 +12,12 @@ const LeadList = () => {
         const data = await getLeads();
         console.log("Raw leads data from API:", data);
         console.log("First lead sample:", data[0]);
-        setLeads(data.reverse()); // Người mới nhất lên đầu
+        // Normalize key ID (hỗ trợ cả id, Id, ID tùy header Sheet)
+        const normalized = data.map(lead => ({
+            ...lead,
+            ID: lead.ID || lead.id || lead.Id || ''
+        }));
+        setLeads(normalized.reverse()); // Người mới nhất lên đầu
         setLoading(false);
     };
 

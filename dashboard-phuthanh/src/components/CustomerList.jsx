@@ -188,7 +188,7 @@ const CustomerList = () => {
                 ) : (
                     filteredCustomers.map((cus, idx) => (
                         <div 
-                            key={idx} 
+                            key={cus.ID || idx} 
                             onClick={() => setSelectedShow(cus)} 
                             className="glass-panel p-6 rounded-[24px] flex flex-col md:flex-row md:items-center justify-between group cursor-pointer hover:bg-white/5 transition-all gap-4 active:scale-[0.98]"
                         >

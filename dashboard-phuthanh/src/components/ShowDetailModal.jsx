@@ -149,7 +149,7 @@ const ShowDetailModal = ({ show, onClose, onUpdate }) => {
                             <h4 className="text-xs text-gray-400 mb-3 uppercase tracking-wider font-bold">Ghi chú & Dịch vụ</h4>
                             <div className="flex-1 space-y-4">
                                 <p className="text-sm text-amber-50/90 italic bg-amber-900/10 p-3 rounded-lg border border-amber-500/10">
-                                    "{show.Notes || "Không có ghi chú"}"
+                                    &ldquo;{show.Notes || "Không có ghi chú"}&rdquo;
                                 </p>
                                 <div>
                                     <span className="text-[10px] text-gray-500 block mb-1">DỊCH VỤ ĐÃ CHỌN:</span>

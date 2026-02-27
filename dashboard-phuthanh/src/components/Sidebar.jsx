@@ -33,7 +33,7 @@ const Sidebar = ({ activeTab, setActiveTab, isOpen, onClose }) => {
 
         {/* Logo */}
         <div className="flex items-center gap-3 mb-12">
-            <img src="/logo.png" alt="Phu Thanh Wedding" className="w-12 h-12 object-contain" />
+            <img src="/logo.png" alt="Phu Thanh Wedding Dreams" className="w-12 h-12 object-contain" />
             <div>
                 <h1 className="font-serif text-lg text-gold leading-none">Phu Thanh</h1>
                 <p className="text-[10px] text-graytext uppercase tracking-widest mt-1">Wedding Dreams</p>
@@ -66,7 +66,7 @@ const Sidebar = ({ activeTab, setActiveTab, isOpen, onClose }) => {
 
         {/* Bottom Actions */}
         <div className="border-t border-white/5 pt-6 space-y-4">
-             <button onClick={() => handleNavClick('settings')} className="w-full flex items-center gap-4 px-4 py-2 rounded-xl text-graytext hover:text-white transition-colors">
+             <button onClick={() => handleNavClick('settings')} className={getNavItemClass('settings')}>
                 <Settings size={20} />
                 <span className="font-medium">Cài đặt</span>
             </button>

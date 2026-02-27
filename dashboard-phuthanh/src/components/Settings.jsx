@@ -274,7 +274,8 @@ const Settings = () => {
                         <div className="pt-4 flex justify-end">
                             <button 
                                 onClick={handleSaveConfig}
-                                className="bg-gold text-deep font-semibold px-8 py-3 rounded-xl flex items-center gap-2 hover:bg-yellow-600 transition-colors"
+                                disabled={isLoading}
+                                className="bg-gold text-deep font-semibold px-8 py-3 rounded-xl flex items-center gap-2 hover:bg-yellow-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 <Save size={20} />
                                 Lưu Cấu Hình

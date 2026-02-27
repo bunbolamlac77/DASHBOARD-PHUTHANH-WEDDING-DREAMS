@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { toPng } from 'html-to-image';
 import { Plus, Trash2, Camera, Download, CheckCircle, Save, MapPin, Calendar, Phone, User, Loader2, Copy, Bookmark } from 'lucide-react';
 import { createNewShow, createLead, getServices, getConfig } from '../services/api';
-import QRCode from 'qrcode';
+// import QRCode from 'qrcode'; // Đã xóa - dùng VietQR API thay thế
 
 // --- CẤU HÌNH DỮ LIỆU ĐÃ CHUYỂN LÊN SHEETS ---
 // Các gói dịch vụ và thông tin ngân hàng nay được kéo từ Google Sheets (Config & Services)
@@ -212,7 +212,7 @@ const QuoteMaker = () => {
       ServiceList: selectedItems.map(i => i.Name || i.name).join(', ') + (extraCosts.length ? ' + Phát sinh' : ''),
       TotalAmount: totalAmount,
       Deposit: depositAmount,
-      Status: 'Confirmed', // Đánh dấu là đã xác nhận thông tin
+      Status: 'Deposited', // Đánh dấu là đã cọc (khớp với filter tabs)
       Notes: 'Khách đã xác nhận thông tin qua App'
     };
 
@@ -522,7 +522,7 @@ const QuoteMaker = () => {
                                 </div>
                             )}
                             <div>
-                                <h1 className="font-serif text-lg md:text-xl text-gold uppercase tracking-wide">{appConfig?.studioName || 'PHU THANH WEDDING'}</h1>
+                                <h1 className="font-serif text-lg md:text-xl text-gold uppercase tracking-wide">{appConfig?.studioName || 'PHU THANH WEDDING DREAMS'}</h1>
                                 <p className="text-[10px] text-gray-400">Hotline/Zalo: {appConfig?.studioPhone || '076 481 6715'}</p>
                                 <p className="text-[10px] text-gray-400">Địa chỉ: {appConfig?.studioAddress || 'Cập nhật địa chỉ studio'}</p>
                             </div>
