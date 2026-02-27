@@ -28,7 +28,7 @@ const formatDateTime = (dateString) => {
             hour: '2-digit',
             minute: '2-digit'
         });
-    } catch (e) {
+    } catch {
         return dateString;
     }
 };

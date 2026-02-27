@@ -1,14 +1,45 @@
 import React, { useState, useEffect } from 'react';
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { ChevronLeft, ChevronRight, MapPin, Loader2 } from 'lucide-react';
-import { getCalendarEvents } from '../services/api';
+import { ChevronLeft, ChevronRight, MapPin, Loader2, Plus, X } from 'lucide-react';
+import { getCalendarEvents, quickAddCalendar } from '../services/api';
 
 const CalendarView = () => {
     const [currentDate, setCurrentDate] = useState(new Date());
     const [events, setEvents] = useState([]);
     const [loading, setLoading] = useState(false);
     const [selectedDateEvents, setSelectedDateEvents] = useState([]);
+    
+    // Quick Add Modal State
+    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const [quickAddText, setQuickAddText] = useState("");
+    const [isSaving, setIsSaving] = useState(false);
+
+    // Xử lý thêm nhanh
+    const handleQuickAdd = async () => {
+        const text = quickAddText.trim();
+        if(!text) return;
+        
+        // Match: "24/03/2026 Tiệc Cưới FB Xuân Thảo"
+        const match = text.match(/^(\d{1,2}\/\d{1,2}(?:\/\d{4})?)\s+(.+)$/);
+        if(!match) {
+            alert("Sai định dạng! VD: 24/03/2026 Tiệc Cưới FB Xuân Thảo");
+            return;
+        }
+        
+        setIsSaving(true);
+        const success = await quickAddCalendar({ Date: match[1], Title: match[2] });
+        if(success) {
+            alert("Thêm lịch thành công!");
+            setIsAddModalOpen(false);
+            setQuickAddText("");
+            // Force re-fetch by triggering effect
+            setCurrentDate(new Date(currentDate.getTime() + 1)); 
+        } else {
+            alert("Lỗi khi thêm lịch!");
+        }
+        setIsSaving(false);
+    };
 
     // Load dữ liệu khi đổi tháng
     useEffect(() => {
@@ -49,9 +80,17 @@ const CalendarView = () => {
                 
                 {/* Header Lịch */}
                 <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-2xl font-serif text-gold capitalize">
-                        {format(currentDate, 'MMMM yyyy', { locale: vi })}
-                    </h2>
+                    <div className="flex items-center gap-4">
+                        <h2 className="text-2xl font-serif text-gold capitalize">
+                            {format(currentDate, 'MMMM yyyy', { locale: vi })}
+                        </h2>
+                        <button 
+                            onClick={() => setIsAddModalOpen(true)}
+                            className="bg-gold/20 text-gold hover:bg-gold hover:text-deep px-3 py-1.5 rounded-full text-xs font-bold transition-colors flex items-center gap-1"
+                        >
+                            <Plus size={14} /> Thêm Nhanh
+                        </button>
+                    </div>
                     <div className="flex gap-2">
                         <button 
                             onClick={() => setCurrentDate(subMonths(currentDate, 1))} 
@@ -149,6 +188,42 @@ const CalendarView = () => {
                     )}
                 </div>
             </div>
+
+            {/* --- QUICK ADD MODAL --- */}
+            {isAddModalOpen && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fade-in">
+                    <div className="bg-deep border border-gold/30 rounded-3xl w-full max-w-lg p-6 shadow-2xl relative">
+                        <button 
+                            onClick={() => setIsAddModalOpen(false)} 
+                            className="absolute top-4 right-4 text-gray-400 hover:text-white"
+                        >
+                            <X size={20} />
+                        </button>
+                        
+                        <h3 className="text-xl font-serif text-gold mb-4">Thêm Nhanh Lịch Trình</h3>
+                        <p className="text-sm text-gray-400 mb-2">Nhập theo định dạng: <strong>[Ngày] [Nội dung]</strong></p>
+                        <p className="text-xs text-white/50 italic mb-4">VD: 24/03/2026 Tiệc Cưới FB Xuân Thảo</p>
+                        
+                        <input 
+                            type="text" 
+                            className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-gold focus:outline-none placeholder-gray-600 mb-4"
+                            placeholder="Nhập thông tin..."
+                            value={quickAddText}
+                            onChange={(e) => setQuickAddText(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleQuickAdd()}
+                        />
+                        
+                        <button 
+                            onClick={handleQuickAdd}
+                            disabled={isSaving}
+                            className="w-full py-3 bg-gold text-deep font-bold rounded-xl hover:bg-gold/90 transition-colors flex justify-center items-center gap-2"
+                        >
+                            {isSaving ? <Loader2 size={18} className="animate-spin" /> : <Plus size={18} />} 
+                            THÊM VÀO LỊCH
+                        </button>
+                    </div>
+                </div>
+            )}
 
         </div>
     );

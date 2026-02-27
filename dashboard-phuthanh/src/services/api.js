@@ -103,7 +103,7 @@ export const updateShow = async (id, updateData) => {
         let result;
         try {
             result = JSON.parse(text);
-        } catch (e) {
+        } catch {
             console.error("❌ [API] Non-JSON Response:", text);
             throw new Error("Server trả về dữ liệu lỗi (HTML/Text). Kiểm tra Deployment.");
         }
@@ -161,7 +161,7 @@ export const createLead = async (data) => {
                 console.error("Server trả về lỗi:", result.message);
                 return false;
             }
-        } catch (e) {
+        } catch {
             console.error("Không thể đọc phản hồi từ server (lỗi JSON):", text);
             return false;
         }
@@ -192,7 +192,7 @@ export const deleteLead = async (leadId) => {
                 console.error("Server trả về lỗi:", result.message);
                 return false;
             }
-        } catch (e) {
+        } catch {
             console.error("Không thể đọc phản hồi từ server (lỗi JSON):", text);
             return false;
         }
@@ -221,6 +221,37 @@ export const getCalendarEvents = async (month, year) => {
     }
 };
 
+// ✅ HÀM MỚI: Lấy danh sách Dịch Vụ / Bảng Giá
+export const getServices = async () => {
+    try {
+        const response = await fetch(`${WEB_APP_URL}?action=getServices`);
+        const text = await response.text();
+        if (text.trim().startsWith("<!DOCTYPE") || text.includes("<html")) return [];
+        const result = JSON.parse(text);
+        return result.status === 'success' ? result.data : [];
+    } catch (error) {
+        console.error("Lỗi lấy danh sách Dịch Vụ:", error);
+        return [];
+    }
+};
+
+// ✅ HÀM MỚI: Thêm nhanh vào Google Calendar
+export const quickAddCalendar = async (data) => {
+    try {
+        const response = await fetch(WEB_APP_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({ action: 'quickAddCalendar', payload: data })
+        });
+        const text = await response.text();
+        const result = JSON.parse(text);
+        return result.status === 'success';
+    } catch (error) {
+        console.error("Lỗi thêm lịch nhanh:", error);
+        return false;
+    }
+};
+
 // ⚠️ BACKWARD COMPATIBILITY: Giữ lại object api để tránh lỗi import cũ
 export const api = {
     getShows,
@@ -229,5 +260,7 @@ export const api = {
     getLeads,
     createLead,
     deleteLead,
-    getCalendarEvents
+    getCalendarEvents,
+    getServices,
+    quickAddCalendar
 };

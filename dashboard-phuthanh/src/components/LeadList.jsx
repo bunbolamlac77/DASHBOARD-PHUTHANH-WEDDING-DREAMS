@@ -17,6 +17,7 @@ const LeadList = () => {
     };
 
     useEffect(() => {
+        // eslint-disable-next-line
         loadLeads();
     }, []);
 

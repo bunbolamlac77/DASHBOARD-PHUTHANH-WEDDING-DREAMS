@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { toPng } from 'html-to-image';
 import { Plus, Trash2, Camera, Download, CheckCircle, Save, MapPin, Calendar, Phone, User, Loader2, Copy, Bookmark } from 'lucide-react';
-import { createNewShow, createLead } from '../services/api';
+import { createNewShow, createLead, getServices } from '../services/api';
 import QRCode from 'qrcode';
 
 // --- CẤU HÌNH DỮ LIỆU GÓI CHỤP ---
@@ -95,8 +95,20 @@ const QuoteMaker = () => {
   // --- STATE QUẢN LÝ DỮ LIỆU ---
   const [customerInfo, setCustomerInfo] = useState({
     groom: '', bride: '', phone: '',
-    dates: '', location1: '', location2: ''
+    dates: '', location: ''
   });
+  const [packagesList, setPackagesList] = useState([]);
+  const [isLoadingPackages, setIsLoadingPackages] = useState(true);
+
+  useEffect(() => {
+    const fetchPackages = async () => {
+        setIsLoadingPackages(true);
+        const data = await getServices();
+        setPackagesList(data);
+        setIsLoadingPackages(false);
+    };
+    fetchPackages();
+  }, []);
   
   const [selectedItems, setSelectedItems] = useState([]); // Danh sách gói đã chọn
   const [extraCosts, setExtraCosts] = useState([]); // Chi phí phát sinh
@@ -112,13 +124,13 @@ const QuoteMaker = () => {
 
   // --- LOGIC TÍNH TOÁN ---
   const calculateTotal = () => {
-    const packageTotal = selectedItems.reduce((sum, item) => sum + item.price, 0);
+    const packageTotal = selectedItems.reduce((sum, item) => sum + Number(item.Price || item.price || 0), 0);
     const extraTotal = extraCosts.reduce((sum, item) => sum + (Number(item.price) || 0), 0);
     return packageTotal + extraTotal;
   };
 
   const totalAmount = calculateTotal();
-  const depositAmount = totalAmount * 0.3; // Cọc 30%
+  const depositAmount = selectedItems.length * 500000; // Cọc 500k mỗi gói
 
   // --- HÀM XỬ LÝ ---
   // --- HÀM XỬ LÝ ---
@@ -236,7 +248,7 @@ const QuoteMaker = () => {
         Name: `${customerInfo.groom} - ${customerInfo.bride}`,
         Phone: customerInfo.phone,
         Date: customerInfo.dates,
-        Note: `Quan tâm: ${selectedItems.map(i => i.name).join(', ')}. Tổng: ${totalAmount.toLocaleString()}đ`
+        Note: `Quan tâm: ${selectedItems.map(i => i.Name || i.name).join(', ')}. Tổng: ${totalAmount.toLocaleString()}đ`
     };
 
     const success = await createLead(leadData);
@@ -258,8 +270,8 @@ const QuoteMaker = () => {
       BrideName: customerInfo.bride,
       Phone: customerInfo.phone,
       Date: customerInfo.dates,
-      Location: `${customerInfo.location1} - ${customerInfo.location2}`,
-      ServiceList: selectedItems.map(i => i.name).join(', ') + (extraCosts.length ? ' + Phát sinh' : ''),
+      Location: customerInfo.location,
+      ServiceList: selectedItems.map(i => i.Name || i.name).join(', ') + (extraCosts.length ? ' + Phát sinh' : ''),
       TotalAmount: totalAmount,
       Deposit: depositAmount,
       Status: 'Confirmed', // Đánh dấu là đã xác nhận thông tin
@@ -276,7 +288,7 @@ const QuoteMaker = () => {
       setPaymentQrImage(null);
       setSelectedItems([]);
       setExtraCosts([]);
-      setCustomerInfo({ groom: '', bride: '', phone: '', dates: '', location1: '', location2: '' });
+      setCustomerInfo({ groom: '', bride: '', phone: '', dates: '', location: '' });
     } catch (error) {
       console.error(error);
       alert('Lỗi khi lưu dữ liệu!');
@@ -353,7 +365,7 @@ const QuoteMaker = () => {
               value={customerInfo.bride} onChange={e => setCustomerInfo({...customerInfo, bride: e.target.value})} />
             <div className="col-span-2 relative">
                <Calendar className="absolute left-3 top-3 text-graytext w-4 h-4"/>
-               <input type="text" placeholder="Ngày chụp (VD: 25/01, 26/01)" className="input-field pl-10" 
+               <input type="text" placeholder="Ngày chụp (VD: 24/03/2026)" className="input-field pl-10" 
                 value={customerInfo.dates} onChange={e => setCustomerInfo({...customerInfo, dates: e.target.value})} />
             </div>
             <div className="col-span-2 relative">
@@ -361,10 +373,11 @@ const QuoteMaker = () => {
                <input type="text" placeholder="Số điện thoại" className="input-field pl-10" 
                 value={customerInfo.phone} onChange={e => setCustomerInfo({...customerInfo, phone: e.target.value})} />
             </div>
-            <input type="text" placeholder="Vị trí 1" className="input-field" 
-              value={customerInfo.location1} onChange={e => setCustomerInfo({...customerInfo, location1: e.target.value})} />
-            <input type="text" placeholder="Vị trí 2" className="input-field" 
-              value={customerInfo.location2} onChange={e => setCustomerInfo({...customerInfo, location2: e.target.value})} />
+            <div className="col-span-2 relative">
+               <MapPin className="absolute left-3 top-3 text-graytext w-4 h-4"/>
+               <input type="text" placeholder="Địa điểm (VD: Cần Thơ, Vĩnh Long)" className="input-field pl-10" 
+                value={customerInfo.location} onChange={e => setCustomerInfo({...customerInfo, location: e.target.value})} />
+            </div>
           </div>
         </div>
 
@@ -379,13 +392,19 @@ const QuoteMaker = () => {
 
             
             <div>
-              <p className="text-xs text-graytext mb-2 uppercase font-bold">Gói Cưới & Video</p>
+              <div className="flex justify-between items-center mb-2">
+                <p className="text-xs text-graytext uppercase font-bold">Gói Cưới & Video (Từ CSDL)</p>
+                {isLoadingPackages && <Loader2 size={12} className="animate-spin text-gold" />}
+              </div>
               <div className="grid grid-cols-1 gap-2">
-                {[...PACKAGES.wedding, ...PACKAGES.video].map(pkg => (
-                  <button key={pkg.id} onClick={() => handleAddPackage(pkg)} 
+                {packagesList.length === 0 && !isLoadingPackages && (
+                    <p className="text-xs text-gray-500 italic">Chưa có dữ liệu gói từ báo giá.</p>
+                )}
+                {packagesList.map((pkg, idx) => (
+                  <button key={`dyn_${idx}`} onClick={() => handleAddPackage(pkg)} 
                     className="flex justify-between p-3 rounded-xl bg-white/5 hover:bg-gold/10 hover:border-gold border border-transparent transition-all text-sm text-left group">
-                    <span className="group-hover:text-gold">{pkg.name}</span>
-                    <span className="font-bold text-cream">{pkg.price.toLocaleString()}đ</span>
+                    <span className="group-hover:text-gold">{pkg.Name || pkg.name}</span>
+                    <span className="font-bold text-cream">{Number(pkg.Price || pkg.price).toLocaleString()}đ</span>
                   </button>
                 ))}
               </div>
@@ -404,9 +423,9 @@ const QuoteMaker = () => {
             <div className="space-y-2">
               {selectedItems.map((item) => (
                 <div key={item._instanceId} className="flex justify-between items-center p-3 rounded-xl bg-white/5 border border-white/10">
-                  <span className="text-sm text-cream">{item.name}</span>
+                  <span className="text-sm text-cream">{item.Name || item.name}</span>
                   <div className="flex items-center gap-3">
-                    <span className="text-sm font-bold text-gold">{item.price.toLocaleString()}đ</span>
+                    <span className="text-sm font-bold text-gold">{Number(item.Price || item.price || 0).toLocaleString()}đ</span>
                     <button 
                       onClick={() => handleRemovePackage(item._instanceId)}
                       className="text-red-500 hover:text-red-400 p-1 hover:bg-red-500/10 rounded transition-colors"
@@ -566,7 +585,7 @@ const QuoteMaker = () => {
                             <div className="mb-4 space-y-0.5">
                                 <h2 className="font-serif text-lg md:text-xl text-white">{customerInfo.groom || 'Chú Rể'} <span className="text-gold">&</span> {customerInfo.bride || 'Cô Dâu'}</h2>
                                 <p className="text-xs text-gray-400">Ngày chụp: {customerInfo.dates || '...'}</p>
-                                <p className="text-xs text-gray-400">{customerInfo.location1} {customerInfo.location2 ? ` - ${customerInfo.location2}` : ''}</p>
+                                <p className="text-xs text-gray-400">{customerInfo.location || ''}</p>
                             </div>
 
                             {/* Table */}
@@ -583,9 +602,9 @@ const QuoteMaker = () => {
                                                     className="opacity-100 md:opacity-0 md:group-hover:opacity-100 text-red-500 hover:text-red-400 -ml-3 transition-opacity" title="Xóa">
                                                     <Trash2 size={10} />
                                                 </button>
-                                                {item.name}
+                                                {item.Name || item.name}
                                             </span>
-                                            <span className="text-cream whitespace-nowrap ml-2">{item.price.toLocaleString()}đ</span>
+                                            <span className="text-cream whitespace-nowrap ml-2">{Number(item.Price || item.price || 0).toLocaleString()}đ</span>
                                         </div>
                                     ))}
                                     {extraCosts.map((item, i) => (
@@ -603,7 +622,7 @@ const QuoteMaker = () => {
                                         <span>{totalAmount.toLocaleString()}đ</span>
                                     </div>
                                      <div className="flex justify-between text-sm text-gold">
-                                        <span>Cọc trước (30%)</span>
+                                        <span>Cọc trước</span>
                                         <span>{depositAmount.toLocaleString()}đ</span>
                                     </div>
                                      <div className="flex justify-between text-sm text-gray-400">
@@ -618,13 +637,15 @@ const QuoteMaker = () => {
                         <div className="border-l-0 lg:border-l border-white/10 lg:pl-8">
                             <h3 className="text-sm font-bold text-gold uppercase mb-3">Sản phẩm nhận được</h3>
                             <div className="space-y-4">
-                                {selectedItems.map((item, i) => (
-                                    item.deliverables && (
+                                {selectedItems.map((item, i) => {
+                                    const delivs = item.DeliverablesArray || item.deliverables || [];
+                                    if(delivs.length === 0) return null;
+                                    return (
                                         <div key={i} className="space-y-1">
-                                            <p className="text-xs font-semibold text-cream mb-1">{item.name}:</p>
+                                            <p className="text-xs font-semibold text-cream mb-1">{item.Name || item.name}:</p>
                                             <ul className="space-y-1 text-[10px] md:text-xs text-gray-300 leading-relaxed">
-                                                {item.deliverables
-                                                    .filter(d => d.trim().startsWith('Sản phẩm'))
+                                                {delivs
+                                                    .filter(d => Boolean(d && d.trim()))
                                                     .map((deliverable, idx) => (
                                                     <li key={idx} className="flex gap-1.5">
                                                         <span className="text-gold mt-0.5">•</span>
@@ -633,8 +654,8 @@ const QuoteMaker = () => {
                                                 ))}
                                             </ul>
                                         </div>
-                                    )
-                                ))}
+                                    );
+                                })}
                                 {selectedItems.length === 0 && (
                                     <p className="text-xs text-gray-500 italic">Chưa chọn gói chụp nào</p>
                                 )}
@@ -662,7 +683,7 @@ const QuoteMaker = () => {
                     <div className="space-y-1">
                         <p className="text-2xl font-serif text-white">{customerInfo.groom} <span className="text-gold">&</span> {customerInfo.bride}</p>
                         <p className="text-sm text-gray-400 uppercase tracking-wide">Ngày chụp: {customerInfo.dates}</p>
-                        <p className="text-sm text-gray-300 italic mt-1">Gói: {selectedItems.map(i => i.name).join(', ')}</p>
+                        <p className="text-sm text-gray-300 italic mt-1">Gói: {selectedItems.map(i => i.Name || i.name).join(', ')}</p>
                     </div>
                     
                     <div className="bg-white p-4 rounded-3xl inline-block shadow-[0_0_30px_rgba(255,255,255,0.1)] border border-white/20">
@@ -675,7 +696,7 @@ const QuoteMaker = () => {
                             <span className="text-xl font-bold">{totalAmount.toLocaleString()}đ</span>
                         </div>
                         <div className="flex justify-between items-center text-gold">
-                            <span>Cần thanh toán (Cọc 30%)</span>
+                            <span>Cần thanh toán (Cọc)</span>
                             <span className="text-2xl font-bold">{depositAmount.toLocaleString()}đ</span>
                         </div>
                         <div className="w-full h-px bg-white/10 my-2"></div>

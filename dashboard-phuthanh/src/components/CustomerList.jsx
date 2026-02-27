@@ -98,9 +98,9 @@ const CustomerList = () => {
         }
     };
 
-    // ✅ Dùng useEffect để gọi API thật khi mở trang
     useEffect(() => {
         fetchData();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     // Logic lọc (như cũ)
