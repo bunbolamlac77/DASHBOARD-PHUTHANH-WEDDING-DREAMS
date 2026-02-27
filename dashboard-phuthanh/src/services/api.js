@@ -3,9 +3,15 @@
 // ⚠️ Sử dụng biến môi trường từ .env.local
 const WEB_APP_URL = import.meta.env.VITE_API_URL;
 
-if (!WEB_APP_URL) {
-    console.error("❌ Chưa cấu hình VITE_API_URL trong file .env.local");
+if (!WEB_APP_URL || WEB_APP_URL === 'undefined') {
+    console.error("❌ Chưa cấu hình VITE_API_URL trong file .env.local hoặc Vercel");
 } 
+
+// Helper check HTML response
+const isHtmlResponse = (text) => {
+    const t = text.trim().toLowerCase();
+    return t.startsWith("<!doctype") || t.includes("<html");
+};
 
 export const createNewShow = async (data) => {
     try {
@@ -47,16 +53,20 @@ export const createNewShow = async (data) => {
 export const getShows = async () => {
     try {
         console.log("Fetching shows from:", `${WEB_APP_URL}?action=getShows`);
+        if (!WEB_APP_URL || WEB_APP_URL === 'undefined') {
+            throw new Error("Lỗi hệ thống: VITE_API_URL chưa được cấu hình trên Vercel.");
+        }
+        
         const response = await fetch(`${WEB_APP_URL}?action=getShows`);
         
         // Đọc raw text trước để debug lỗi HTML (thường do quyền truy cập hoặc Script Crash)
         const text = await response.text();
         console.log("API Raw Response:", text);
 
-        // Kiểm tra sơ bộ xem có phải HTML báo lỗi không
-        if (text.trim().startsWith("<!DOCTYPE") || text.includes("<html")) {
-             console.error("API returned HTML instead of JSON. Check 'Who has access' or Script Errors.");
-             throw new Error("Lỗi Server (HTML Response): Vui lòng kiểm tra quyền truy cập hoặc Log của Apps Script.");
+        // Kiểm tra sơ bộ xem có phải HTML báo lỗi không (phân biệt hoa thường)
+        if (isHtmlResponse(text)) {
+             console.error("API returned HTML instead of JSON. Check VITE_API_URL, 'Who has access' or Script Errors.");
+             throw new Error("API trả về trang HTML thay vì dữ liệu. Vui lòng kiểm tra biến môi trường VITE_API_URL trên Vercel hoặc quyền truy cập Apps Script.");
         }
 
         let result;
@@ -127,7 +137,7 @@ export const getLeads = async () => {
         const response = await fetch(`${WEB_APP_URL}?action=getLeads`);
         const text = await response.text();
         
-        if (text.trim().startsWith("<!DOCTYPE") || text.includes("<html")) {
+        if (isHtmlResponse(text)) {
             console.error("API returned HTML instead of JSON for getLeads");
             return [];
         }
@@ -208,7 +218,7 @@ export const getCalendarEvents = async (month, year) => {
         const response = await fetch(`${WEB_APP_URL}?action=getCalendar&month=${month}&year=${year}`);
         const text = await response.text();
         
-        if (text.trim().startsWith("<!DOCTYPE") || text.includes("<html")) {
+        if (isHtmlResponse(text)) {
             console.error("API returned HTML instead of JSON for getCalendar");
             return [];
         }
@@ -226,7 +236,7 @@ export const getServices = async () => {
     try {
         const response = await fetch(`${WEB_APP_URL}?action=getServices`);
         const text = await response.text();
-        if (text.trim().startsWith("<!DOCTYPE") || text.includes("<html")) return [];
+        if (isHtmlResponse(text)) return [];
         const result = JSON.parse(text);
         return result.status === 'success' ? result.data : [];
     } catch (error) {
@@ -257,7 +267,7 @@ export const getConfig = async () => {
     try {
         const response = await fetch(`${WEB_APP_URL}?action=getConfig`);
         const text = await response.text();
-        if (text.trim().startsWith("<!DOCTYPE") || text.includes("<html")) return {};
+        if (isHtmlResponse(text)) return {};
         const result = JSON.parse(text);
         return result.status === 'success' ? result.data : {};
     } catch (error) {
