@@ -56,7 +56,7 @@ const LeadList = () => {
     };
 
     return (
-        <div className="max-w-4xl mx-auto animate-fade-in pb-20">
+        <div className="max-w-4xl mx-auto animate-fade-in">
             <h2 className="text-2xl font-serif text-gold mb-6">Danh Sách Khách Tiềm Năng</h2>
             
             {loading && (
@@ -93,7 +93,7 @@ const LeadList = () => {
                         </div>
                         <button 
                             onClick={() => handleDeleteClick(lead)}
-                            className="bg-red-500/10 p-3 rounded-full hover:bg-red-500 hover:text-white transition-colors text-red-400 ml-4 flex-shrink-0"
+                            className="bg-red-500/10 p-3 rounded-full hover:bg-red-500 hover:text-white transition-colors text-red-400 ml-4 flex-shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center"
                             title="Xóa khách tiềm năng"
                         >
                             <Trash2 size={20} />

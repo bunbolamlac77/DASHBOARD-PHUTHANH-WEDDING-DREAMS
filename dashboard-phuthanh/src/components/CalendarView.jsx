@@ -73,7 +73,7 @@ const CalendarView = () => {
     };
 
     return (
-        <div className="flex flex-col lg:flex-row gap-6 h-full pb-20 animate-fade-in">
+        <div className="flex flex-col lg:flex-row gap-4 md:gap-6 h-full animate-fade-in">
             
             {/* --- LỊCH LỚN --- */}
             <div className="flex-1 glass-panel p-6 rounded-[32px] overflow-hidden flex flex-col relative">
@@ -160,7 +160,7 @@ const CalendarView = () => {
             </div>
 
             {/* --- CHI TIẾT NGÀY --- */}
-            <div className="w-full lg:w-80 glass-panel p-6 rounded-[32px] overflow-y-auto no-scrollbar">
+            <div className="w-full lg:w-80 glass-panel p-4 md:p-6 rounded-[32px] overflow-y-auto no-scrollbar max-h-60 lg:max-h-none">
                 <h3 className="text-lg font-serif text-cream mb-4 border-b border-white/10 pb-2">Sự kiện trong ngày</h3>
                 
                 <div className="space-y-4">

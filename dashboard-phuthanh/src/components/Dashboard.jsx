@@ -147,7 +147,7 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in pb-20 md:pb-0">
+    <div className="space-y-6 animate-fade-in">
       
       {/* 0. Notifications */}
       <div className="mb-6">
@@ -256,7 +256,7 @@ const Dashboard = () => {
               <div className="w-8 h-8 border-2 border-gold border-t-transparent rounded-full animate-spin"></div>
             </div>
           ) : (
-            <div className="flex items-end justify-between h-48 md:h-64 px-2 md:px-4 gap-2 md:gap-4 mt-4 md:mt-8">
+            <div className="flex items-end justify-between h-40 md:h-64 px-2 md:px-4 gap-2 md:gap-4 mt-4 md:mt-8">
               {chartMonths.map((item, i) => {
                 const heightPct = maxRevenue > 0 ? Math.max((item.revenue / maxRevenue) * 100, item.revenue > 0 ? 5 : 0) : 0;
                 return (
@@ -279,7 +279,7 @@ const Dashboard = () => {
         </div>
 
         {/* Hoạt động gần đây */}
-        <div className="bg-glass/50 backdrop-blur-xl p-5 md:p-6 rounded-3xl border border-white/5 flex flex-col h-[400px] md:h-auto">
+        <div className="bg-glass/50 backdrop-blur-xl p-5 md:p-6 rounded-3xl border border-white/5 flex flex-col h-[320px] md:h-auto">
           <h3 className="text-lg md:text-xl font-serif text-gold mb-4 md:mb-6 flex justify-between items-center">
             Hoạt động gần đây
           </h3>

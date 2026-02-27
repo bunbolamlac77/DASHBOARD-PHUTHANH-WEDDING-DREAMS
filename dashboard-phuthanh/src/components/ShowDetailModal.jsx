@@ -219,7 +219,7 @@ const ShowDetailModal = ({ show, onClose, onUpdate }) => {
                 </div>
 
                 {/* Footer Action */}
-                <div className="p-5 md:p-6 border-t border-white/10 bg-glass/80 backdrop-blur-xl flex justify-end gap-3 sticky bottom-0 z-10 pb-8 md:pb-6">
+                <div className="p-5 md:p-6 border-t border-white/10 bg-glass/80 backdrop-blur-xl flex justify-end gap-3 sticky bottom-0 z-10 pb-[max(2rem,env(safe-area-inset-bottom))] md:pb-6">
                     <button onClick={onClose} className="px-5 py-3 rounded-xl hover:bg-white/10 text-gray-300 font-medium transition-colors text-sm">Đóng</button>
                     <button 
                         onClick={handleSave} 

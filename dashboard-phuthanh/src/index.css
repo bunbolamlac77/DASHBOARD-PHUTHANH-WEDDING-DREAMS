@@ -4,8 +4,23 @@
 @layer base {
   body {
     @apply bg-deep text-cream font-sans antialiased overflow-hidden;
+    /* Disable text size adjust when rotating on iOS */
+    -webkit-text-size-adjust: 100%;
+  }
+
+  /* Remove 300ms tap delay on iOS Safari for all interactive elements */
+  button, a, [role="button"] {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Consistent appearance for inputs on iOS */
+  input, textarea, select {
+    -webkit-appearance: none;
+    appearance: none;
   }
 }
+
 
 /* Scrollbar ẩn (cho đẹp trên Mac/Mobile) - Class này dùng cho body hoặc nơi cần ẩn */
 .no-scrollbar::-webkit-scrollbar {
@@ -46,7 +61,8 @@
   }
 
   .input-field {
-    @apply w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-sm text-cream outline-none transition-all duration-300 placeholder:text-gray-500;
+    /* text-[16px] is required to prevent iOS Safari auto-zoom on input focus */
+    @apply w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-[16px] text-cream outline-none transition-all duration-300 placeholder:text-gray-500;
   }
 
   .input-field:focus {

@@ -159,11 +159,11 @@ const Settings = () => {
     };
 
     return (
-        <div className="flex flex-col h-full bg-deep text-cream -m-4 md:-m-10 p-4 md:p-10 hide-scrollbar overflow-y-auto">
+        <div className="flex flex-col bg-deep text-cream">
             {/* Header */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-3">
                 <div>
-                    <h1 className="text-3xl font-serif text-gold flex items-center gap-3">
+                    <h1 className="text-xl md:text-3xl font-serif text-gold flex items-center gap-2 md:gap-3">
                         <SettingsIcon size={32} />
                         Cài đặt Hệ thống
                     </h1>
@@ -180,7 +180,7 @@ const Settings = () => {
             </div>
 
             {/* Tabs */}
-            <div className="flex gap-4 mb-8 border-b border-white/10 pb-2">
+            <div className="flex gap-2 md:gap-4 mb-6 md:mb-8 border-b border-white/10 pb-2 overflow-x-auto no-scrollbar">
                 <button
                     onClick={() => setActiveTab('config')}
                     className={`pb-2 px-4 font-medium transition-colors ${activeTab === 'config' ? 'text-gold border-b-2 border-gold' : 'text-graytext hover:text-white'}`}
@@ -298,7 +298,7 @@ const Settings = () => {
                             </button>
                         </div>
                         
-                        <div className="overflow-x-auto rounded-xl border border-white/10 max-h-[60vh] overflow-y-auto">
+                        <div className="overflow-x-auto rounded-xl border border-white/10">
                             <table className="w-full text-left border-collapse">
                                 <thead>
                                     <tr className="bg-white/10 text-graytext uppercase text-xs tracking-wider sticky top-0 backdrop-blur-md">

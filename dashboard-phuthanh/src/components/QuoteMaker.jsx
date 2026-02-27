@@ -287,7 +287,7 @@ const QuoteMaker = () => {
   };
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 lg:h-full pb-20">
+    <div className="flex flex-col lg:flex-row gap-6 lg:h-full">
       
       {/* --- CỘT TRÁI: NHẬP LIỆU (Ẩn khi đã tạo ảnh) --- */}
       {!generatedImage && (

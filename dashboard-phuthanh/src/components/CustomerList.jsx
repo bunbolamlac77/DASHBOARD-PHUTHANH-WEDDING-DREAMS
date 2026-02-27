@@ -167,7 +167,7 @@ const CustomerList = () => {
             </div>
 
             {/* List Content */}
-            <div className="space-y-4 pb-20 overflow-y-auto no-scrollbar flex-1">
+            <div className="space-y-3 overflow-y-auto no-scrollbar flex-1">
                 {loading ? (
                     <div className="text-center text-graytext py-10">Đang tải dữ liệu từ Google Sheets...</div>
                 ) : error ? (
@@ -190,16 +190,16 @@ const CustomerList = () => {
                         <div 
                             key={cus.ID || idx} 
                             onClick={() => setSelectedShow(cus)} 
-                            className="glass-panel p-6 rounded-[24px] flex flex-col md:flex-row md:items-center justify-between group cursor-pointer hover:bg-white/5 transition-all gap-4 active:scale-[0.98]"
+                            className="glass-panel p-4 md:p-6 rounded-[20px] flex flex-col md:flex-row md:items-center justify-between group cursor-pointer hover:bg-white/5 transition-all gap-3 active:scale-[0.98]"
                         >
-                            <div className="flex items-center gap-5">
-                                <div className={`w-14 h-14 rounded-full flex items-center justify-center text-xl font-serif font-bold shrink-0 ${
+                            <div className="flex items-center gap-3">
+                                <div className={`w-11 h-11 md:w-14 md:h-14 rounded-full flex items-center justify-center text-lg md:text-xl font-serif font-bold shrink-0 ${
                                     cus.Status === 'Done' ? 'bg-success/20 text-success' : 'bg-gold/20 text-gold'
                                 }`}>
                                     {cus.GroomName ? cus.GroomName.charAt(0) : 'K'}
                                 </div>
                                 <div className="space-y-1">
-                                    <h4 className="font-serif text-xl text-cream">{cus.GroomName} <span className="text-gold text-sm">&</span> {cus.BrideName}</h4>
+                                    <h4 className="font-serif text-base md:text-xl text-cream leading-tight">{cus.GroomName} <span className="text-gold text-sm">&</span> {cus.BrideName}</h4>
                                     <div className="text-sm text-graytext flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
                                         <span className="flex items-center gap-1.5"><Calendar size={14} className="text-gold/70"/> {formatDate(cus.Date)}</span>
                                         <span className="hidden md:block w-1 h-1 rounded-full bg-white/20"></span>
@@ -213,7 +213,7 @@ const CustomerList = () => {
                                 </div>
                             </div>
                             
-                            <div className="flex flex-row md:flex-col items-center md:items-end justify-between md:justify-center gap-2 pl-14 md:pl-0">
+                            <div className="flex flex-row md:flex-col items-center md:items-end justify-between md:justify-center gap-2 pl-14 md:pl-0 shrink-0">
                                 <span className="text-gold font-bold text-lg">{Number(cus.TotalAmount).toLocaleString()}đ</span>
                                 <span className={`text-[10px] px-3 py-1 rounded-full border uppercase font-bold tracking-wider ${
                                     cus.Status === 'Done' ? 'bg-success/10 text-success border-success/20' : 
