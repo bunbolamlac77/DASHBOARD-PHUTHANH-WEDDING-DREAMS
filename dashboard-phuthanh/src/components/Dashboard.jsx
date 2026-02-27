@@ -1,9 +1,156 @@
-import React from 'react';
-import { TrendingUp, Users, Calendar, DollarSign, Activity, ArrowUpRight } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { TrendingUp, Users, Calendar, DollarSign, Activity, ArrowUpRight, AlertCircle, BellRing, CheckCircle2 } from 'lucide-react';
+import { getShows } from '../services/api';
 
 const Dashboard = () => {
+  const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchAndProcessShows = async () => {
+      try {
+        setLoading(true);
+        const rawData = await getShows();
+        if (Array.isArray(rawData)) {
+          // Normalize data structure to lower case keys like in CustomerList
+          const normalizedData = rawData.map(item => {
+              const newItem = {};
+              Object.keys(item).forEach(key => newItem[key.toLowerCase()] = item[key]);
+              return {
+                  GroomName: newItem.groomname || newItem.groom || '',
+                  BrideName: newItem.bridename || newItem.bride || '',
+                  Date: newItem.date || '',
+                  Location: newItem.location || '',
+                  TotalAmount: Number(newItem.totalamount) || 0,
+                  PaidAmount: Number(newItem.paidamount) || 0,
+                  Status: newItem.status || 'Pending'
+              };
+          });
+
+          const validShows = normalizedData.filter(item => item.GroomName.trim() !== '' || item.BrideName.trim() !== '');
+          
+          const newNotifications = [];
+          
+          const today = new Date();
+          const tomorrow = new Date(today);
+          tomorrow.setDate(tomorrow.getDate() + 1);
+
+          validShows.forEach((show, index) => {
+              // 1. Nhắc lịch chụp (Hôm nay / Ngày mai)
+              if (show.Date && show.Status !== 'Done' && show.Status !== 'Delivery') {
+                  const showDate = new Date(show.Date);
+                  if (!isNaN(showDate.getTime()) && show.Date.includes('-')) {
+                      const isToday = showDate.getDate() === today.getDate() && showDate.getMonth() === today.getMonth() && showDate.getFullYear() === today.getFullYear();
+                      const isTomorrow = showDate.getDate() === tomorrow.getDate() && showDate.getMonth() === tomorrow.getMonth() && showDate.getFullYear() === tomorrow.getFullYear();
+                      
+                      if (isToday) {
+                          newNotifications.push({
+                              id: `upcoming-today-${index}`,
+                              type: 'upcoming',
+                              title: 'Lịch chụp hôm nay',
+                              message: `Hôm nay có lịch chụp của ${show.GroomName} & ${show.BrideName}${show.Location ? ` tại ${show.Location}` : ''}.`,
+                              urgent: true
+                          });
+                      } else if (isTomorrow) {
+                          const dateStr = showDate.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
+                          newNotifications.push({
+                              id: `upcoming-${index}`,
+                              type: 'upcoming',
+                              title: 'Lịch chụp ngày mai',
+                              message: `Mai (${dateStr}) có lịch chụp của ${show.GroomName} & ${show.BrideName}${show.Location ? ` tại ${show.Location}` : ''}.`,
+                              urgent: false
+                          });
+                      }
+                  }
+              }
+
+              // 2. Nhắc nợ (Đã giao ảnh nhưng chưa thanh toán hết)
+              if ((show.Status === 'Delivery' || show.Status === 'Done') && show.TotalAmount > show.PaidAmount) {
+                  const debt = show.TotalAmount - show.PaidAmount;
+                  newNotifications.push({
+                      id: `debt-${index}`,
+                      type: 'debt',
+                      title: 'Nhắc nợ chưa thanh toán',
+                      message: `Show ${show.GroomName} & ${show.BrideName} đã giao sản phẩm nhưng chưa thanh toán hết. Còn nợ: ${debt.toLocaleString()}đ.`,
+                      urgent: debt >= 5000000 // Gấp nếu nợ trên 5tr
+                  });
+              }
+          });
+
+          // Sort notifications: urgent first, then upcoming, then debt
+          newNotifications.sort((a, b) => {
+              if (a.urgent && !b.urgent) return -1;
+              if (!a.urgent && b.urgent) return 1;
+              if (a.type === 'upcoming' && b.type === 'debt') return -1;
+              if (a.type === 'debt' && b.type === 'upcoming') return 1;
+              return 0;
+          });
+
+          setNotifications(newNotifications);
+        }
+      } catch (error) {
+        console.error("Error fetching shows for notifications:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAndProcessShows();
+  }, []);
+
   return (
     <div className="space-y-6 animate-fade-in pb-20 md:pb-0">
+      
+      {/* 0. Assistant Notifications (To-Do Today) */}
+      <div className="mb-6">
+          <h3 className="text-lg md:text-xl font-serif text-gold flex items-center gap-2 mb-4">
+              <BellRing size={20}/> Việc cần làm hôm nay
+          </h3>
+          
+          {loading ? (
+             <div className="bg-glass border border-white/5 rounded-2xl p-4 flex items-center justify-center h-20">
+                 <div className="w-5 h-5 border-2 border-gold border-t-transparent rounded-full animate-spin"></div>
+             </div>
+          ) : notifications.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {notifications.map(note => (
+                      <div 
+                          key={note.id} 
+                          className={`p-4 rounded-2xl border flex items-start gap-3 transition-transform hover:-translate-y-1 ${
+                              note.type === 'debt' 
+                              ? (note.urgent ? 'bg-red-500/10 border-red-500/30' : 'bg-orange-500/10 border-orange-500/30')
+                              : 'bg-yellow-500/10 border-yellow-500/30'
+                          }`}
+                      >
+                          <div className={`mt-0.5 shrink-0 ${
+                              note.type === 'debt' 
+                              ? (note.urgent ? 'text-red-400' : 'text-orange-400')
+                              : 'text-yellow-400'
+                          }`}>
+                              {note.type === 'upcoming' ? <Calendar size={18} /> : <AlertCircle size={18} />}
+                          </div>
+                          <div>
+                              <p className={`text-sm font-bold mb-1 ${
+                                  note.type === 'debt' 
+                                  ? (note.urgent ? 'text-red-400' : 'text-orange-400')
+                                  : 'text-yellow-400'
+                              }`}>{note.title}</p>
+                              <p className="text-sm text-cream/90 leading-relaxed">{note.message}</p>
+                          </div>
+                      </div>
+                  ))}
+              </div>
+          ) : (
+             <div className="bg-glass border border-white/5 disabled rounded-2xl p-6 flex flex-col items-center justify-center text-center">
+                 <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center text-success mb-3">
+                     <CheckCircle2 size={24} className="text-emerald-400" />
+                 </div>
+                 <p className="text-cream font-medium">Bạn đã hoàn thành mọi việc!</p>
+                 <p className="text-sm text-graytext mt-1">Hôm nay không có lịch trình hoặc công việc cấp bách nào.</p>
+             </div>
+          )}
+      </div>
+
       {/* 1. Top Stats Cards (KPIs) */}
       <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
         {/* Doanh Thu - Full width on mobile if needed, but 2-col looks okay with span-2 */}
