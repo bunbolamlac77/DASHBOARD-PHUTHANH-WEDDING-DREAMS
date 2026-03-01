@@ -53,7 +53,7 @@ const QuoteMaker = () => {
   const [generatedImage, setGeneratedImage] = useState(null); // Lưu ảnh báo giá
   const [paymentQrImage, setPaymentQrImage] = useState(null); // Lưu ảnh QR thanh toán
   const [isSaving, setIsSaving] = useState(false); // Trạng thái đang lưu
-  const [qrDataUrl, setQrDataUrl] = useState(''); // QR code as data URL
+  const [qrDataUrl, setQrDataUrl] = useState(''); // QR code as base64 data URL (fetched to avoid CORS)
   const [showAddedToast, setShowAddedToast] = useState(false); // Show toast when package added
 
   const receiptRef = useRef(null); // Ref để chụp ảnh vùng báo giá
@@ -107,13 +107,8 @@ const QuoteMaker = () => {
   };
 
   const renderDeliverableText = (text) => {
-    // 1. Tách chuỗi bằng dấu "+"
     const parts = text.split('+');
-    
-    // Nếu không có dấu cộng, trả về text gốc
     if (parts.length === 1) return text;
-
-    // Nếu có dấu cộng, render lại với span styled cho dấu "+"
     return (
       <span>
         {parts.map((part, index) => (
@@ -126,6 +121,36 @@ const QuoteMaker = () => {
         ))}
       </span>
     );
+  };
+
+  // Helper hiển thị tên khách: nếu chỉ 1 tên thì hiển thị mình tên đó, không có dấu &
+  const renderCustomerName = (large = false) => {
+    const g = customerInfo.groom?.trim();
+    const b = customerInfo.bride?.trim();
+    const sizeClass = large ? 'text-2xl' : 'text-lg md:text-xl';
+
+    if (g && b) {
+      // Cả 2 tên: hiển thị đầy đủ ‘Chú Rể & Cô Dâu’
+      return (
+        <h2 className={`font-serif ${sizeClass} text-white`}>
+          {g} <span className="text-gold">&</span> {b}
+        </h2>
+      );
+    } else if (g || b) {
+      // Chỉ 1 tên: hiển thị mình tên đó, không có dấu & hay placeholder
+      return (
+        <h2 className={`font-serif ${sizeClass} text-white`}>
+          {g || b}
+        </h2>
+      );
+    } else {
+      // Chưa nhập tên nào: hiển placeholder mờ
+      return (
+        <h2 className={`font-serif ${sizeClass} text-gray-500 italic`}>
+          Nguyễn Văn A
+        </h2>
+      );
+    }
   };
 
   // --- TẠO ẢNH BÁO GIÁ ---
@@ -235,14 +260,12 @@ const QuoteMaker = () => {
     }
   };
 
-  // --- TẠO QR CODE VIETQR ---
+  // --- TẠO QR CODE VIETQR (fetch về base64 để tránh CORS khi capture ảnh) ---
   useEffect(() => {
-    // Không cần dùng thư viện qrcode local nữa, dùng API VietQR
-    const generateQR = () => {
+    const generateQR = async () => {
         if (!depositAmount) return;
         
         const amount = Math.round(depositAmount);
-        // Simple format: Names + Date (e.g., "Thanh Phu 24.3")
         const groomName = customerInfo.groom || 'Thanh';
         const brideName = customerInfo.bride || 'Phu';
         const dateStr = customerInfo.dates || '';
@@ -251,38 +274,63 @@ const QuoteMaker = () => {
         const bankId = appConfig?.bankId || 'ICB';
         const accountNo = appConfig?.accountNo || '0764816715';
         
-        // Construct VietQR URL
-        // Format: https://img.vietqr.io/image/<BANK_ID>-<ACCOUNT_NO>-<TEMPLATE>.png
         const url = `https://img.vietqr.io/image/${bankId}-${accountNo}-print.png?amount=${amount}&addInfo=${encodeURIComponent(addInfo)}&accountName=${encodeURIComponent(accountName)}`;
         
-        setQrDataUrl(url);
+        try {
+          // Fetch ảnh QR về dạng base64 để html-to-image không bị lỗi CORS
+          const res = await fetch(url);
+          const blob = await res.blob();
+          const reader = new FileReader();
+          reader.onloadend = () => setQrDataUrl(reader.result);
+          reader.readAsDataURL(blob);
+        } catch (e) {
+          console.error('Lỗi tải QR:', e);
+          setQrDataUrl(url); // fallback: dùng URL gốc
+        }
     };
     
     generateQR();
   }, [depositAmount, customerInfo.dates, customerInfo.groom, customerInfo.bride, appConfig]);
 
-  // --- SAO CHÉP ẢNH VÀO CLIPBOARD ---
+  // --- CHIA SẺ / SAO CHÉP ẢNH (hỗ trợ iOS & Desktop) ---
   const handleCopyImage = async (imageSrc) => {
-    // Nếu không truyền tham số, mặc định là generatedImage (ảnh báo giá)
     const targetImage = imageSrc || generatedImage;
     if (!targetImage) return;
-    
+
     try {
-      // Chuyển đổi base64 image sang blob
       const response = await fetch(targetImage);
       const blob = await response.blob();
-      
-      // Copy vào clipboard
-      await navigator.clipboard.write([
-        new ClipboardItem({
-          [blob.type]: blob
-        })
-      ]);
-      
-      alert('Đã sao chép ảnh vào clipboard!');
+      const file = new File([blob], 'baogía.png', { type: 'image/png' });
+
+      // iOS Safari: dùng Web Share API để chia sẻ file ảnh
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: 'Báo Giá - Phu Thanh Wedding Dreams',
+        });
+        return;
+      }
+
+      // Desktop Chrome/Edge: dùng clipboard.write
+      if (navigator.clipboard && navigator.clipboard.write) {
+        await navigator.clipboard.write([
+          new ClipboardItem({ 'image/png': blob })
+        ]);
+        alert('Đã sao chép ảnh vào clipboard!');
+        return;
+      }
+
+      // Fallback: tự động tải xuống
+      const link = document.createElement('a');
+      link.href = targetImage;
+      link.download = 'baogía.png';
+      link.click();
     } catch (err) {
-      console.error('Lỗi khi copy ảnh:', err);
-      alert('Không thể sao chép ảnh. Vui lòng thử tải xuống thay thế.');
+      console.error('Lỗi khi chia sẻ ảnh:', err);
+      // Nếu user huỷ share thì không báo lỗi
+      if (err.name !== 'AbortError') {
+        alert('Không thể chia sẻ. Vui lòng dùng nút tải xuống.');
+      }
     }
   };
 
@@ -440,7 +488,7 @@ const QuoteMaker = () => {
                         <button 
                             onClick={() => handleCopyImage(generatedImage)}
                             className="bg-gold hover:bg-gold/80 p-3 rounded-full text-deep transition-all shadow-xl hover:scale-110 border-2 border-deep/20"
-                            title="Copy ảnh">
+                            title="Chia sẻ / Copy">
                             <Copy size={20} strokeWidth={2.5} />
                         </button>
                         <a 
@@ -475,7 +523,7 @@ const QuoteMaker = () => {
                              <button 
                                 onClick={() => handleCopyImage(paymentQrImage)}
                                 className="bg-gold hover:bg-gold/80 p-3 rounded-full text-deep transition-all shadow-xl hover:scale-110 border-2 border-deep/20"
-                                title="Copy ảnh">
+                                title="Chia sẻ / Copy">
                                 <Copy size={20} strokeWidth={2.5} />
                             </button>
                             <a 
@@ -538,7 +586,7 @@ const QuoteMaker = () => {
                         <div>
                             {/* Customer Info */}
                             <div className="mb-4 space-y-0.5">
-                                <h2 className="font-serif text-lg md:text-xl text-white">{customerInfo.groom || 'Chú Rể'} <span className="text-gold">&</span> {customerInfo.bride || 'Cô Dâu'}</h2>
+                                {renderCustomerName(false)}
                                 <p className="text-xs text-gray-400">Ngày chụp: {customerInfo.dates || '...'}</p>
                                 <p className="text-xs text-gray-400">{customerInfo.location || ''}</p>
                             </div>
@@ -636,7 +684,7 @@ const QuoteMaker = () => {
                     </div>
 
                     <div className="space-y-1">
-                        <p className="text-2xl font-serif text-white">{customerInfo.groom} <span className="text-gold">&</span> {customerInfo.bride}</p>
+                        {renderCustomerName(true)}
                         <p className="text-sm text-gray-400 uppercase tracking-wide">Ngày chụp: {customerInfo.dates}</p>
                         <p className="text-sm text-gray-300 italic mt-1">Gói: {selectedItems.map(i => i.Name || i.name).join(', ')}</p>
                     </div>
