@@ -115,7 +115,8 @@ const CustomerList = () => {
     // Helper: Format số điện thoại (Thêm số 0 ở đầu nếu thiếu)
     const formatPhoneNumber = (phone) => {
         if (!phone) return '';
-        const phoneStr = phone.toString();
+        // Strip dấu ' (apostrophe) mà Apps Script thêm vào để giữ số 0 đầu trong Sheets
+        let phoneStr = phone.toString().replace(/^'/, '');
         // Nếu là số và chưa có số 0 ở đầu thì thêm vào
         if (/^\d+$/.test(phoneStr) && !phoneStr.startsWith('0')) {
             return `0${phoneStr}`;

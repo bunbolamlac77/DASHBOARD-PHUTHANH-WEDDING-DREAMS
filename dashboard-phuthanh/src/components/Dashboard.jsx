@@ -43,8 +43,8 @@ const Dashboard = () => {
 
         normalized.forEach((show, idx) => {
           if (show.Date && show.Status !== 'Done' && show.Status !== 'Delivery') {
-            const showDate = new Date(show.Date);
-            if (!isNaN(showDate.getTime()) && show.Date.includes('-')) {
+            const showDate = parseShowDate(show.Date);
+            if (showDate) {
               const isToday = showDate.toDateString() === today.toDateString();
               const isTomorrow = showDate.toDateString() === tomorrow.toDateString();
               if (isToday) {
@@ -89,6 +89,27 @@ const Dashboard = () => {
     fetchAll();
   }, []);
 
+  // --- Hàm parse ngày hỗ trợ cả DD/MM/YYYY và YYYY-MM-DD ---
+  const parseShowDate = (dateStr) => {
+    if (!dateStr) return null;
+    const str = dateStr.toString().trim();
+    // Nếu có dấu '/', thử parse DD/MM/YYYY (lấy mốc đầu tiên nếu có nhiều ngày cách nhau bởi dấu phẩy)
+    const firstPart = str.split(',')[0].trim();
+    if (firstPart.includes('/')) {
+      const parts = firstPart.split('/');
+      if (parts.length >= 2) {
+        const day = parseInt(parts[0], 10);
+        const month = parseInt(parts[1], 10) - 1;
+        const year = parts.length === 3 ? parseInt(parts[2], 10) : new Date().getFullYear();
+        const d = new Date(year, month, day);
+        return isNaN(d.getTime()) ? null : d;
+      }
+    }
+    // Thử parse dạng ISO hoặc các định dạng khác
+    const d = new Date(str);
+    return isNaN(d.getTime()) ? null : d;
+  };
+
   // --- KPI Calculations ---
   const now = new Date();
   const currentMonth = now.getMonth();
@@ -96,19 +117,19 @@ const Dashboard = () => {
 
   // Doanh thu tháng này: tổng TotalAmount của shows có ngày trong tháng hiện tại
   const revenueThisMonth = shows.reduce((sum, s) => {
-    if (!s.Date) return sum;
-    const d = new Date(s.Date);
-    if (!isNaN(d.getTime()) && d.getMonth() === currentMonth && d.getFullYear() === currentYear) {
+    const d = parseShowDate(s.Date);
+    if (d && d.getMonth() === currentMonth && d.getFullYear() === currentYear) {
       return sum + s.TotalAmount;
     }
     return sum;
   }, 0);
 
   // Shows sắp tới: chưa xong, ngày >= hôm nay
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const upcomingShows = shows.filter(s => {
     if (!s.Date || s.Status === 'Done') return false;
-    const d = new Date(s.Date);
-    return !isNaN(d.getTime()) && d >= new Date(now.toDateString());
+    const d = parseShowDate(s.Date);
+    return d && d >= todayStart;
   });
 
   // Tổng shows đã hoàn thành
@@ -124,9 +145,8 @@ const Dashboard = () => {
     const d = new Date(currentYear, currentMonth - i, 1);
     const mLabel = `T${d.getMonth() + 1}`;
     const mRevenue = shows.reduce((sum, s) => {
-      if (!s.Date) return sum;
-      const sd = new Date(s.Date);
-      if (!isNaN(sd.getTime()) && sd.getMonth() === d.getMonth() && sd.getFullYear() === d.getFullYear()) {
+      const sd = parseShowDate(s.Date);
+      if (sd && sd.getMonth() === d.getMonth() && sd.getFullYear() === d.getFullYear()) {
         return sum + s.TotalAmount;
       }
       return sum;

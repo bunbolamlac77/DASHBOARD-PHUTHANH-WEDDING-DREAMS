@@ -69,7 +69,7 @@ const LeadList = () => {
                 )}
                 
                 {leads.map((lead, idx) => (
-                    <div key={idx} className="glass-panel p-5 rounded-xl border-l-4 border-gold flex justify-between items-center hover:bg-white/5 transition-all">
+                    <div key={lead.ID || idx} className="glass-panel p-5 rounded-xl border-l-4 border-gold flex justify-between items-center hover:bg-white/5 transition-all">
                         <div className="flex-1">
                             <h3 className="font-bold text-lg text-cream">{lead.Name}</h3>
                             <div className="flex gap-4 text-xs text-graytext mt-2">

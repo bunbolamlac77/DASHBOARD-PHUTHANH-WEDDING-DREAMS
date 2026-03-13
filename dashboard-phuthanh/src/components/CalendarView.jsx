@@ -9,6 +9,7 @@ const CalendarView = () => {
     const [events, setEvents] = useState([]);
     const [loading, setLoading] = useState(false);
     const [selectedDateEvents, setSelectedDateEvents] = useState([]);
+    const [refreshKey, setRefreshKey] = useState(0); // Dùng để trigger re-fetch sau khi thêm lịch
     
     // Quick Add Modal State
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -33,15 +34,14 @@ const CalendarView = () => {
             alert("Thêm lịch thành công!");
             setIsAddModalOpen(false);
             setQuickAddText("");
-            // Force re-fetch by triggering effect
-            setCurrentDate(new Date(currentDate.getTime() + 1)); 
+            setRefreshKey(prev => prev + 1); // Trigger re-fetch sạch sẽ
         } else {
             alert("Lỗi khi thêm lịch!");
         }
         setIsSaving(false);
     };
 
-    // Load dữ liệu khi đổi tháng
+    // Load dữ liệu khi đổi tháng hoặc refresh
     useEffect(() => {
         const fetchEvents = async () => {
             setLoading(true);
@@ -54,7 +54,7 @@ const CalendarView = () => {
             setLoading(false);
         };
         fetchEvents();
-    }, [currentDate]);
+    }, [currentDate, refreshKey]);
 
     // Xử lý tạo lưới lịch
     const monthStart = startOfMonth(currentDate);
